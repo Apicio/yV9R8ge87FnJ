@@ -35,9 +35,9 @@ void detect(Mat img, vector<Rect>& regionsOfInterest){
 	/*Calcolo histogramma per identificazione valori di pixel significativi ( != 0 )*/
 	calcHist(&gray,1,0,Mat(),hist,1,&histSize,&histRange);
 	
-	/*Calcolo indici dove l'istogramma non è zero.*/
+	/*Calcolo gli indici corrispondenti ai bin dove c'è almeno un valore.*/
 	vector<int> indexes;
-	for(int r=0; r<hist.rows;r++)
+	for(int r=1; r<hist.rows;r++) //Escludo bin 0 -> background
 		for(int c=0; c<hist.cols;c++)
 			if(hist.at<int>(r,c)!=0)
 				indexes.push_back(r);

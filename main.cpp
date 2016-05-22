@@ -17,7 +17,7 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	const string img_file = "immagini/img27.jpg";
+	const string img_file = "immagini/img26.jpg";
 	Mat image; vector<Rect> rectangles;
 	image = imread(img_file,  IMREAD_COLOR); // Read the file
 
