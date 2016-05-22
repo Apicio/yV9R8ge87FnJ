@@ -7,8 +7,7 @@
 using namespace std;
 using namespace cv;
 
-#define CLASSIFIER something
-#define FEAT_SIZE 123
+#define FEAT_SIZE 8
 
 /**
  * @brief Extracts the feature vector form image
@@ -22,8 +21,9 @@ void feature(Mat image, Mat& featureVector);
  * @param classifier The classifier to train
  * @param trainingFeatures The set of extracted feature (each row is a sample)
  * @param classLabels The label for each image
+ * @param kFolds Uses k-folds crossvalidation (default is leave-one-out)
  */
-void train(CLASSIFIER& classifier, Mat trainingFeatures, vector<int> classLabels);
+void train(CvSVM& classifier, Mat trainingFeatures, vector<int> classLabels, int kFolds = 0);
 
 /**
  * @brief Classifies a ROI
@@ -31,6 +31,6 @@ void train(CLASSIFIER& classifier, Mat trainingFeatures, vector<int> classLabels
  * @param image ROI of the detection to classify
  * @return The class label
  */
-int classify(CLASSIFIER& classifier, Mat image);
+int classify(CvSVM& classifier, Mat image);
 
 #endif // CLASSIFICATION_H
