@@ -1,5 +1,16 @@
 #include "detection.h"
 
+vector<double> computeArea(vector<vector<Point> > contours){
+	vector<double> toret;
+	for(int i = 0; i<contours.size(); i++){
+		vector<Point> row = contours.at(i);
+		double area = contourArea(row);
+		toret.push_back(area);
+	}
+	return toret;
+}
+
+
 void detect(Mat img, vector<Rect>& regionsOfInterest){
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray, hist;
@@ -57,16 +68,16 @@ void detect(Mat img, vector<Rect>& regionsOfInterest){
 
 		vector<double> areas = computeArea(contours);
 		int max = 40000; int min = 1000;
-		for(int i = areas.size()-1; i>=0; i--){
-			if(areas.at(i)>max || areas.at(i)<min )
-				contours.erase(contours.begin()+i);
+		for(int j = areas.size()-1; j>=0; j--){
+			if(areas.at(j)>max || areas.at(j)<min )
+				contours.erase(contours.begin()+j);
 		}
 
-	/*Calcolo Bounding Rectangle a partire dall'immagine con componenti connesse di interesse*/
+		/*Calcolo Bounding Rectangle a partire dall'immagine con componenti connesse di interesse*/
 		 vector<Rect> boundRect( contours.size() );
 		 vector<vector<Point> > contours_poly( contours.size() );
 
-		/*Costruzione immagine finale*/
+		/*Costruzione immagine finale ed estrazione regioni di interesse*/
 		for (int idx = 0; idx < contours.size(); idx++){
 			Scalar color(indexes[i]);
 			approxPolyDP( Mat(contours[idx]), contours_poly[idx], 3, true );
@@ -78,6 +89,7 @@ void detect(Mat img, vector<Rect>& regionsOfInterest){
 		}
 		out = out+cont;
 	}
-
+	imshow("hhh",out);
+	
 
 }

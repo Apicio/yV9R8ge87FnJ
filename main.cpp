@@ -8,19 +8,17 @@
  */
 
 #include <iostream>
-#include <alerror/alerror.h>
-#include <alproxies/altexttospeechproxy.h>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include <alerror\alerror.h>
+#include <alproxies\altexttospeechproxy.h>
 #include <iostream>
-
+#include "detection.h"
 using namespace cv;
 using namespace std;
 
 int main(int argc, char* argv[])
 {
-	const string img_file = "dice.jpg";
-	Mat image;
+	const string img_file = "immagini/img27.jpg";
+	Mat image; vector<Rect> rectangles;
 	image = imread(img_file,  IMREAD_COLOR); // Read the file
 
 	if (!image.data) // Check for invalid input
@@ -29,8 +27,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	namedWindow("Display window", WINDOW_AUTOSIZE); // Create a window for display.
-	imshow("Display window", image); // Show our image inside it.
+	detect(image,rectangles);
 
 	waitKey(0); // Wait for a keystroke in the window
 }
