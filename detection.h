@@ -12,6 +12,6 @@ using namespace cv;
  * @param image Raw image to analize
  * @param regionsOfInterest Array of ROIs detected
  */
-void detect(Mat image, vector<Mat>& regionsOfInterest);
+void detect(Mat image, vector<Rect>& regionsOfInterest);
 
 #endif // DETECTION_H
