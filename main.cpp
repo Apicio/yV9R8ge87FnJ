@@ -11,16 +11,17 @@
 #include <alerror\alerror.h>
 #include <alproxies\altexttospeechproxy.h>
 #include <iostream>
+
 #include "detection.h"
 using namespace cv;
 using namespace std;
 
 int main(int argc, char* argv[])
 {
-	const string img_file = "immagini/img26.jpg";
-	Mat image; vector<Rect> rectangles;
+	const string img_file = "immagini/img135.jpg";
+	Mat image; vector<Mat> rectangles;
 	image = imread(img_file,  IMREAD_COLOR); // Read the file
-
+	
 	if (!image.data) // Check for invalid input
 	{
 		cout << "Could not open or find the image" << std::endl;
@@ -28,6 +29,13 @@ int main(int argc, char* argv[])
 	}
 
 	detect(image,rectangles);
+	
+		stringstream s;
+	for(int i=0;i<rectangles.size();i++){
+		s<<i;
+		namedWindow(s.str(), WINDOW_NORMAL);
+		imshow(s.str(),rectangles[i]);
+	}
 
 	waitKey(0); // Wait for a keystroke in the window
 }

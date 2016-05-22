@@ -11,33 +11,36 @@ vector<double> computeArea(vector<vector<Point> > contours){
 }
 
 
-void detect(Mat img, vector<Rect>& regionsOfInterest){
+void detect(Mat img, vector<Mat>& regionsOfInterest){
 	/*************INIZIALIZZAZIONI**********/
-	Mat gray, hist;
+	Mat gray, hist, smooth;
 	Mat out = Mat::zeros(img.size(), CV_8U);
+	Mat tmp = Mat::zeros(img.size(), CV_8U);
 	int R=2,N=0;
-	Mat kernel = getStructuringElement(MORPH_ELLIPSE,Size(3,3));
+	Mat kernel = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
 	int histSize = 256; const int* c=0;
 	float range[] = { 0, 256 } ;
     const float* histRange = { range };
 	vector< vector<Point> > contours;
-	/***************************************/
 
+	bool discardBlack = false;
+	/***************************************/
+	
 	/*Abbassamento risoluzione radiometrica per rimozione dettagli*/
-	img = img/255;
-	for(int r=0;r<img.rows;r++)
-			for(int c=0;c<img.cols;c++ ){
-				img.at<uchar>(r,c) = cvRound(img.at<uchar>(r,c));
+	tmp = img/255;
+	for(int r=0;r<tmp.rows;r++)
+			for(int c=0;c<tmp.cols;c++ ){
+				tmp.at<uchar>(r,c) = cvRound(tmp.at<uchar>(r,c));
 			}
-	img = img*255;
-	cvtColor(img, gray, CV_BGR2GRAY);
+	tmp = tmp*255;
+	cvtColor(tmp, gray, CV_BGR2GRAY);
 	
 	/*Calcolo histogramma per identificazione valori di pixel significativi ( != 0 )*/
 	calcHist(&gray,1,0,Mat(),hist,1,&histSize,&histRange);
 	
 	/*Calcolo gli indici corrispondenti ai bin dove c'è almeno un valore.*/
 	vector<int> indexes;
-	for(int r=1; r<hist.rows;r++) //Escludo bin 0 -> background
+	for(int r=1; r<hist.rows;r++) /*Escludo bin 0 -> background****** da non escludere se dobbiamo fare detection di cose nere*/
 		for(int c=0; c<hist.cols;c++)
 			if(hist.at<int>(r,c)!=0)
 				indexes.push_back(r);
@@ -79,17 +82,33 @@ void detect(Mat img, vector<Rect>& regionsOfInterest){
 
 		/*Costruzione immagine finale ed estrazione regioni di interesse*/
 		for (int idx = 0; idx < contours.size(); idx++){
+			double black=0; double white=0;
 			Scalar color(indexes[i]);
 			approxPolyDP( Mat(contours[idx]), contours_poly[idx], 3, true );
 			boundRect[idx] = boundingRect( Mat(contours_poly[idx]) );
 			drawContours(cont, contours, idx, color, CV_FILLED, 8);
 			rectangle( cont, boundRect[idx].tl(), boundRect[idx].br(), color, 2, 8, 0 );
-			regionsOfInterest.push_back(boundRect[idx]);
-
+			
+			/*Ulterio filtraggio delle regioni di interesse: calcoliamo pixelNONneri/pixelNeri
+			********NB: SI PUO' CANCELLARE SE DOBBIAMO FARE DETECTION DI ROBE NERE **********
+			*/
+			Mat tmpRect = morph(boundRect[idx]);
+			for(int r=0;r<tmpRect.rows && discardBlack;r++)
+				for(int c=0;c<tmpRect.cols;c++){
+					if(tmpRect.at<uchar>(r,c)==0) //black
+						black++;
+					else
+						white++;
+				}
+			double thresh = white/(black+1); //non ci piace dividere per 0! :)
+		
+			/*Estrazione delle Regioni di Interesse, tramite i boundingRectangle, dall'immagine originale*/
+			if(discardBlack && thresh>=0.9 )
+			   regionsOfInterest.push_back(img(boundRect[idx]));
+			else if (!discardBlack)
+				regionsOfInterest.push_back(img(boundRect[idx]));
 		}
 		out = out+cont;
 	}
-	imshow("hhh",out);
-	
-
+	imshow("out",out);
 }
