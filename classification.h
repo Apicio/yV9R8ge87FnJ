@@ -14,23 +14,40 @@ using namespace cv;
  * @param image Raw image to extract
  * @param featureVector A row vector of features
  */
-void feature(Mat image, Mat& featureVector);
+void extractFeatures(Mat image, Mat& featureVector);
 
 /**
- * @brief Trains the classifier on a data set
+ * @brief Trains a single multiclass SVM classifier on a data set
  * @param classifier The classifier to train
  * @param trainingFeatures The set of extracted feature (each row is a sample)
  * @param classLabels The label for each image
  * @param kFolds Uses k-folds crossvalidation (default is leave-one-out)
  */
-void train(CvSVM& classifier, Mat trainingFeatures, vector<int> classLabels, int kFolds = 0);
+void trainMulticlassSvm(CvSVM& classifier, Mat trainingFeatures, vector<int> classLabels, int kFolds = 0);
 
 /**
- * @brief Classifies a ROI
+ * @brief Classifies a ROI with a single multiclass SVM
  * @param classifier The classifier to use
  * @param image ROI of the detection to classify
  * @return The class label
  */
-int classify(CvSVM& classifier, Mat image);
+int classifyMulticlassSvm(CvSVM& classifier, Mat image);
+
+/**
+ * @brief Trains multiple single-class SVM classifiers on a data set
+ * @param classifiers The classifiers to train (N, one for class)
+ * @param trainingFeatures The set of extracted feature (each row is a sample)
+ * @param classLabels The label for each image (1 to N)
+ * @param kFolds Uses k-folds crossvalidation (default is leave-one-out)
+ */
+void trainOneAgainstAllSvm(vector<CvSVM> classifiers, Mat trainingFeatures, vector<int> classLabels, int kFolds = 0);
+
+/**
+ * @brief Classifies a ROI with multiple single-class SVM classifiers
+ * @param classifier The classifiers to use
+ * @param image ROI of the detection to classify
+ * @return The class label, or 0 for rejection
+ */
+int classifyOneAgainstAllSvm(vector<CvSVM> classifiers, Mat image);
 
 #endif // CLASSIFICATION_H
