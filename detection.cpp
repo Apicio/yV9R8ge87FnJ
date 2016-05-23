@@ -70,43 +70,30 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 		findContours(morph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 
 		vector<double> areas = computeArea(contours);
-		int max = 40000; int min = 1000;
 		for(int j = areas.size()-1; j>=0; j--){
-			if(areas.at(j)>max || areas.at(j)<min )
+			if(areas.at(j)>MAX_AREA || areas.at(j)<MIN_AREA )
 				contours.erase(contours.begin()+j);
 		}
 
 		/*Calcolo Bounding Rectangle a partire dall'immagine con componenti connesse di interesse*/
 		 vector<Rect> boundRect( contours.size() );
 		 vector<vector<Point> > contours_poly( contours.size() );
+		 vector<Point2f>center( contours.size() ); 
+		 vector<float>radius( contours.size() );
 
 		/*Costruzione immagine finale ed estrazione regioni di interesse*/
 		for (int idx = 0; idx < contours.size(); idx++){
-			double black=0; double white=0;
 			Scalar color(indexes[i]);
 			approxPolyDP( Mat(contours[idx]), contours_poly[idx], 3, true );
 			boundRect[idx] = boundingRect( Mat(contours_poly[idx]) );
+
+			if(boundRect[idx].x >= boundRect[idx].width*RECT_AUGMENT && boundRect[idx].y >= boundRect[idx].height*RECT_AUGMENT ){
+				boundRect[idx] += Size(boundRect[idx].width*RECT_AUGMENT , boundRect[idx].height*RECT_AUGMENT);			  // Aumenta area del 10%
+				boundRect[idx] -= Point((boundRect[idx].width*RECT_AUGMENT)/2 , (boundRect[idx].height*RECT_AUGMENT)/2 ); // Ricentra il rettangolo
+			}
 			drawContours(cont, contours, idx, color, CV_FILLED, 8);
 			rectangle( cont, boundRect[idx].tl(), boundRect[idx].br(), color, 2, 8, 0 );
-			
-			/*Ulterio filtraggio delle regioni di interesse: calcoliamo pixelNONneri/pixelNeri
-			********NB: SI PUO' CANCELLARE SE DOBBIAMO FARE DETECTION DI ROBE NERE **********
-			*/
-			Mat tmpRect = morph(boundRect[idx]);
-			for(int r=0;r<tmpRect.rows && discardBlack;r++)
-				for(int c=0;c<tmpRect.cols;c++){
-					if(tmpRect.at<uchar>(r,c)==0) //black
-						black++;
-					else
-						white++;
-				}
-			double thresh = white/(black+1); //non ci piace dividere per 0! :)
-		
-			/*Estrazione delle Regioni di Interesse, tramite i boundingRectangle, dall'immagine originale*/
-			if(discardBlack && thresh>=0.9 )
-			   regionsOfInterest.push_back(img(boundRect[idx]));
-			else if (!discardBlack)
-				regionsOfInterest.push_back(img(boundRect[idx]));
+			regionsOfInterest.push_back(img(boundRect[idx]));
 		}
 		out = out+cont;
 	}
