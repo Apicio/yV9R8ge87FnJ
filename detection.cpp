@@ -10,14 +10,24 @@ vector<double> computeArea(vector<vector<Point> > contours){
 	return toret;
 }
 
+Mat detectShadows(Mat img){
+	Mat imgHSV, maskHSV;
+	cvtColor(img, imgHSV, CV_BGR2HSV);
+	Mat bands[3];
+	split(imgHSV,bands);
+	maskHSV = bands[2] >= 126;
+	imshow("banda2",bands[2]);
+	return maskHSV;
+}
+
 void detect(Mat img, vector<Mat>& regionsOfInterest){
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray, hist, smooth;
 	Mat out = Mat::zeros(Size(1280,960), CV_8U);
-	Mat interpImp = Mat::zeros(Size(1280,960), CV_8U);
 	Mat bin = Mat::zeros(Size(1280,960), CV_8U);
 	Mat morph = Mat::zeros(Size(1280,960), CV_8U);
 	Mat cont = Mat::zeros(Size(1280,960), CV_8U);
+	Mat maskHSV = Mat::zeros(Size(1280,960), CV_8U);
 	Mat tmp;
 	int R=2,N=0;
 	Mat kernel = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
@@ -27,12 +37,10 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 	vector< vector<Point> > contours;
 	/***************************************/
 	
-	
-	/*Interpolazione immagine per essere invarianti alla risoluzione*/
-	resize(img, interpImp, interpImp.size(), 0, 0, INTER_LINEAR);
-
+	maskHSV = detectShadows(img);
+	imshow("maschera",maskHSV);
 	/*Abbassamento risoluzione radiometrica per rimozione dettagli*/
-	tmp = interpImp/255;
+	tmp = img/255;
 	for(int r=0;r<tmp.rows;r++)
 			for(int c=0;c<tmp.cols;c++ ){
 				tmp.at<uchar>(r,c) = cvRound(tmp.at<uchar>(r,c));
@@ -44,7 +52,7 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 
 	/*Calcolo gli indici corrispondenti ai bin dove c'è almeno un valore.*/
 	vector<int> indexes;
-	for(int r=1; r<hist.rows;r++) /*Escludo bin 0 -> background****** da non escludere se dobbiamo fare detection di cose nere*/
+	for(int r=0; r<hist.rows;r++) /*Escludo bin 0 -> background****** da non escludere se dobbiamo fare detection di cose nere*/
 		for(int c=0; c<hist.cols;c++)
 			if(hist.at<int>(r,c)!=0)
 				indexes.push_back(r);
@@ -52,9 +60,13 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 	/*Estrazione componenti connesse di interesse*/
 	
 	for(int i=0;i<indexes.size();i++){
+	
+	/*Calcolo immagine binaria del singolo "canale" */
+		bin = gray == indexes[i];
+	/*Rimozione Ombre*/
+		bin = bin & maskHSV;
 		
-
-		/*Calcolo immagine binaria del singolo "canale" */
+	/*
 		for(int r=0; r<gray.rows;r++)
 			for(int c=0; c<gray.cols;c++){
 				if(gray.at<uchar>(r,c)==indexes[i])
@@ -63,6 +75,7 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 					bin.at<uchar>(r,c) = 0;
 			}
 		
+		*/
 		/*Operazioni Morfologiche, kernel circolare*/
 		morphologyEx(bin, morph, MORPH_ERODE, kernel, Point(-1, -1));
 		morphologyEx(morph, morph, MORPH_OPEN, kernel, Point(-1, -1));
@@ -97,12 +110,12 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 		
 			if(tmpRect.x>0 && tmpRect.y>0 && tmpRect.x+tmpRect.width < tmp.cols && tmpRect.y+tmpRect.height < tmp.rows){ //Se il nuovo rettangolo allargato
 																														// NON esce fuori, accettalo
-				regionsOfInterest.push_back(interpImp(tmpRect));
+				regionsOfInterest.push_back(img(tmpRect));
 				toPrint = tmpRect;
 			}
 			else{
 				toPrint = boundRect[idx];
-				regionsOfInterest.push_back(interpImp(boundRect[idx]));
+				regionsOfInterest.push_back(img(boundRect[idx]));
 			}
 			rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
 		}

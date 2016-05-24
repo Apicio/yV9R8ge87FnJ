@@ -4,8 +4,8 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
-#define MAX_AREA 20000
-#define MIN_AREA 1000
+#define MAX_AREA 40000
+#define MIN_AREA 2000
 #define RECT_AUGMENT 0.5
 using namespace std;
 using namespace cv;

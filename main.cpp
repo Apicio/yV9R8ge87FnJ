@@ -18,11 +18,13 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	const string img_file = "training_set/img90.jpg";
+	const string img_file = "training_set/img100.jpg";
 	Mat image; vector<Mat> rectangles;
-	
+	Mat interpImg = Mat::zeros(Size(1280,960), CV_8U);
 	image = imread(img_file,  IMREAD_COLOR); // Read the file
 	
+	/*Interpolazione immagine per essere invarianti alla risoluzione*/
+	resize(image, interpImg, interpImg.size(), 0, 0, INTER_LINEAR);
 
 	if (!image.data) // Check for invalid input
 	{
@@ -30,7 +32,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	detect(image,rectangles);
+	detect(interpImg,rectangles);
 	
 		stringstream s;
 	for(int i=0;i<rectangles.size();i++){
