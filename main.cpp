@@ -18,10 +18,12 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	const string img_file = "immagini/img146.jpg";
+	const string img_file = "training_set/img90.jpg";
 	Mat image; vector<Mat> rectangles;
+	
 	image = imread(img_file,  IMREAD_COLOR); // Read the file
 	
+
 	if (!image.data) // Check for invalid input
 	{
 		cout << "Could not open or find the image" << std::endl;
@@ -33,9 +35,10 @@ int main(int argc, char* argv[])
 		stringstream s;
 	for(int i=0;i<rectangles.size();i++){
 		s<<i;
-		namedWindow(s.str(), WINDOW_NORMAL);
+		namedWindow(s.str(), WINDOW_AUTOSIZE);
 		imshow(s.str(),rectangles[i]);
+		s.str(std::string());
 	}
-
+	
 	waitKey(0); // Wait for a keystroke in the window
 }

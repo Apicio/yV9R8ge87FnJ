@@ -10,34 +10,38 @@ vector<double> computeArea(vector<vector<Point> > contours){
 	return toret;
 }
 
-
 void detect(Mat img, vector<Mat>& regionsOfInterest){
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray, hist, smooth;
-	Mat out = Mat::zeros(img.size(), CV_8U);
-	Mat tmp = Mat::zeros(img.size(), CV_8U);
+	Mat out = Mat::zeros(Size(1280,960), CV_8U);
+	Mat interpImp = Mat::zeros(Size(1280,960), CV_8U);
+	Mat bin = Mat::zeros(Size(1280,960), CV_8U);
+	Mat morph = Mat::zeros(Size(1280,960), CV_8U);
+	Mat cont = Mat::zeros(Size(1280,960), CV_8U);
+	Mat tmp;
 	int R=2,N=0;
 	Mat kernel = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
 	int histSize = 256; const int* c=0;
 	float range[] = { 0, 256 } ;
     const float* histRange = { range };
 	vector< vector<Point> > contours;
-
-	bool discardBlack = false;
 	/***************************************/
 	
+	
+	/*Interpolazione immagine per essere invarianti alla risoluzione*/
+	resize(img, interpImp, interpImp.size(), 0, 0, INTER_LINEAR);
+
 	/*Abbassamento risoluzione radiometrica per rimozione dettagli*/
-	tmp = img/255;
+	tmp = interpImp/255;
 	for(int r=0;r<tmp.rows;r++)
 			for(int c=0;c<tmp.cols;c++ ){
 				tmp.at<uchar>(r,c) = cvRound(tmp.at<uchar>(r,c));
 			}
 	tmp = tmp*255;
 	cvtColor(tmp, gray, CV_BGR2GRAY);
-	
 	/*Calcolo histogramma per identificazione valori di pixel significativi ( != 0 )*/
 	calcHist(&gray,1,0,Mat(),hist,1,&histSize,&histRange);
-	
+
 	/*Calcolo gli indici corrispondenti ai bin dove c'è almeno un valore.*/
 	vector<int> indexes;
 	for(int r=1; r<hist.rows;r++) /*Escludo bin 0 -> background****** da non escludere se dobbiamo fare detection di cose nere*/
@@ -48,9 +52,7 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 	/*Estrazione componenti connesse di interesse*/
 	
 	for(int i=0;i<indexes.size();i++){
-		Mat bin = Mat::zeros(img.size(), CV_8U);
-		Mat morph = Mat::zeros(img.size(), CV_8U);
-		Mat cont = Mat::zeros(img.size(), CV_8U);
+		
 
 		/*Calcolo immagine binaria del singolo "canale" */
 		for(int r=0; r<gray.rows;r++)
@@ -86,16 +88,27 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 			Scalar color(indexes[i]);
 			approxPolyDP( Mat(contours[idx]), contours_poly[idx], 3, true );
 			boundRect[idx] = boundingRect( Mat(contours_poly[idx]) );
-
-			if(boundRect[idx].x >= boundRect[idx].width*RECT_AUGMENT && boundRect[idx].y >= boundRect[idx].height*RECT_AUGMENT ){
-				boundRect[idx] += Size(boundRect[idx].width*RECT_AUGMENT , boundRect[idx].height*RECT_AUGMENT);			  // Aumenta area del 10%
-				boundRect[idx] -= Point((boundRect[idx].width*RECT_AUGMENT)/2 , (boundRect[idx].height*RECT_AUGMENT)/2 ); // Ricentra il rettangolo
-			}
+			Rect tmpRect = boundRect[idx];
+			Rect toPrint;
+			tmpRect += Size(tmpRect.width*RECT_AUGMENT ,tmpRect.height*RECT_AUGMENT);			  // Aumenta area di RECT_ARGUMENT
+			tmpRect -= Point((tmpRect.width*RECT_AUGMENT)/2 , (tmpRect.height*RECT_AUGMENT)/2 ); // Ricentra il rettangolo
+			
 			drawContours(cont, contours, idx, color, CV_FILLED, 8);
-			rectangle( cont, boundRect[idx].tl(), boundRect[idx].br(), color, 2, 8, 0 );
-			regionsOfInterest.push_back(img(boundRect[idx]));
+		
+			if(tmpRect.x>0 && tmpRect.y>0 && tmpRect.x+tmpRect.width < tmp.cols && tmpRect.y+tmpRect.height < tmp.rows){ //Se il nuovo rettangolo allargato
+																														// NON esce fuori, accettalo
+				regionsOfInterest.push_back(interpImp(tmpRect));
+				toPrint = tmpRect;
+			}
+			else{
+				toPrint = boundRect[idx];
+				regionsOfInterest.push_back(interpImp(boundRect[idx]));
+			}
+			rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
 		}
 		out = out+cont;
 	}
+	namedWindow("out",WINDOW_NORMAL);
 	imshow("out",out);
 }
+
