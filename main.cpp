@@ -18,21 +18,23 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	const string img_file = "training_set/img100.jpg";
+	const string img_file = "training_set/img194.jpg";
 	Mat image; vector<Mat> rectangles;
-	Mat interpImg = Mat::zeros(Size(1280,960), CV_8U);
-	image = imread(img_file,  IMREAD_COLOR); // Read the file
-	
-	/*Interpolazione immagine per essere invarianti alla risoluzione*/
-	resize(image, interpImg, interpImg.size(), 0, 0, INTER_LINEAR);
 
+	image = imread(img_file,  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
+	
+	//Mat interpImg = Mat::zeros(Size(1280,960), image.type());
+	/*Interpolazione immagine per essere invarianti alla risoluzione*/
+	if(image.rows < 960 ||image.cols <1280)
+		resize(image, image, Size(1280,960), 0, 0, INTER_LINEAR);
+	
 	if (!image.data) // Check for invalid input
 	{
 		cout << "Could not open or find the image" << std::endl;
 		return -1;
 	}
 
-	detect(interpImg,rectangles);
+	detect(image,rectangles);
 	
 		stringstream s;
 	for(int i=0;i<rectangles.size();i++){

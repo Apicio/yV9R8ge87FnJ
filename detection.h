@@ -5,8 +5,11 @@
 #include <vector>
 
 #define MAX_AREA 40000
-#define MIN_AREA 2000
-#define RECT_AUGMENT 0.5
+#define MIN_AREA 1000
+#define RECT_AUGMENT 0.1
+#define SHADOW_THRESH 126
+#define MEAN_OFFSET
+
 using namespace std;
 using namespace cv;
 
