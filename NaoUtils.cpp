@@ -12,7 +12,7 @@ void NaoUtils::explore(){
   
   try {
 	  AL::ALMotionProxy motionProx(NAOIP, NAOPORT);
-	 AL::ALRobotPostureProxy posture(NAOIP, NAOPORT);
+	  AL::ALRobotPostureProxy posture(NAOIP, NAOPORT);
 	 posture.goToPosture("Stand",1.0); 
 	
 	  
