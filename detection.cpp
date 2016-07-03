@@ -6,6 +6,7 @@ vector<double> computeArea(vector<vector<Point> > contours){
 		vector<Point> row = contours.at(i);
 		double area = contourArea(row);
 		toret.push_back(area);
+
 	}
 	return toret;
 }
@@ -18,17 +19,6 @@ Mat detectShadows(Mat img){
 	maskHSV = HSVbands[2] >= SHADOW_THRESH;
 	return maskHSV;
 }
-/*
-Mat imadjust(Mat img){
-	double max, min, scale; 
-	minMaxLoc(img,&min,&max); cout<<min<<endl; cout<<max<<endl;
-	img = img-min; 
-	scale = 255/(max-min);
-	img = img*scale;
-	return img;
-}
-
-*/
 
 void imadjust(const Mat1b& src, Mat1b& dst, int tol = 1, Vec2i in = Vec2i(0, 255), Vec2i out = Vec2i(0, 255))
 {
@@ -86,9 +76,7 @@ void imadjust(const Mat1b& src, Mat1b& dst, int tol = 1, Vec2i in = Vec2i(0, 255
 Mat computeRationedImage(vector<Mat> bands){
 	Mat1b toRet = Mat::zeros(Size(1280,960), CV_8U);
 	toRet = bands[0]/bands[1] + bands[0]/bands[2] + bands[1]/bands[2] + bands[2]/bands[1] +	 bands[2]/bands[0] + bands[1]/bands[0];
-
 	imadjust(toRet,toRet);
-	imshow("adjust",toRet);
 	return toRet;
 }   
 #if 0
@@ -119,6 +107,7 @@ Mat backgroundEstimation(Mat img){
 		toReturn = img>minpx
 }
 #endif
+/*
 Mat backgroundEstimation(vector<Mat> bands){
 	
 	Mat mask, matMean,stddev; double mean, variance;
@@ -136,6 +125,19 @@ Mat backgroundEstimation(vector<Mat> bands){
 	imshow("nobackmak",mask);;
 	return mask;
 }
+*/
+
+Mat backgroundRemoval(Mat& img){
+	Mat imgHSV; Mat HSVbands[3]; Mat toRet = img.clone(); Mat mask1,mask2,maskTOT;
+	cvtColor(img,imgHSV,CV_BGR2HSV);
+	split(imgHSV,HSVbands);
+	mask1 = HSVbands[0]*2 <=70;
+	mask2 = HSVbands[0]*2 >=180;
+	maskTOT = mask1 + mask2;
+	imshow("backmask",maskTOT*100);
+	return maskTOT;
+
+}
 //29 85 94 95 96 97
 Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 	Mat toReturn;
@@ -147,9 +149,86 @@ Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 	return toReturn;
 }
 
+void detect2(Mat img, vector<Mat>& regionsOfInterest){
+	Mat gray;
+	Mat out = Mat::zeros(Size(1280,960), CV_8U);
+	Mat masked = Mat::zeros(Size(1280,960), CV_8U);
+	Mat morph = Mat::zeros(Size(1280,960), CV_8U);
+	Mat cont = Mat::zeros(Size(1280,960), CV_8U);
+	Mat maskHSV = Mat::zeros(Size(1280,960), CV_8U);
+	Mat noBackMask = Mat::zeros(Size(1280,960), CV_8U);
+	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(2,2));
+	Mat kernelOp = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
+	vector< vector<Point> > contours;
+	maskHSV		  = detectShadows(img);
+	noBackMask    = backgroundRemoval(img);
+	/***************************************/
+
+	
+	cvtColor(img,gray,CV_BGR2GRAY);
+	gray = (gray!=0);
+	imshow("gray",gray);
+	/*Rimozione Ombre e Background*/
+		
+	bitwise_and(gray, maskHSV , masked);
+	bitwise_and(masked, noBackMask ,masked);
+	
+	/*Operazioni Morfologiche, kernel circolare*/
+	morphologyEx(masked, morph, MORPH_ERODE, kernelEr, Point(-1, -1));
+	morphologyEx(morph, morph, MORPH_OPEN, kernelOp, Point(-1, -1));
+
+	/*Ricerca componenti connesse come meno di un certo numero di pixel*/
+	findContours(morph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+
+	vector<double> areas = computeArea(contours);
+	for(int j = areas.size()-1; j>=0; j--){
+		if(areas.at(j)>MAX_AREA || areas.at(j)<MIN_AREA )
+			contours.erase(contours.begin()+j);
+	}
+
+	/*Calcolo Bounding Rectangle a partire dall'immagine con componenti connesse di interesse*/
+	 vector<Rect> boundRect( contours.size() );
+	 vector<vector<Point> > contours_poly( contours.size() );
+	 vector<Point2f>center( contours.size() ); 
+	 vector<float>radius( contours.size() );
+	 /*Costruzione immagine finale ed estrazione regioni di interesse*/
+	for (int idx = 0; idx < contours.size(); idx++){
+		Scalar color(255);
+		approxPolyDP( Mat(contours[idx]), contours_poly[idx], 3, true );
+		boundRect[idx] = boundingRect( Mat(contours_poly[idx]) );
+		minEnclosingCircle( (Mat)contours_poly[idx], center[idx], radius[idx] );
+	//	Rect tmpRect(center[idx].x-boundRect[idx].width/2,center[idx].y-boundRect[idx].height/2,boundRect[idx].width,boundRect[idx].height);
+		Rect tmpRect(center[idx].x-radius[idx],center[idx].y-radius[idx],radius[idx]*2,radius[idx]*2);
+		//Rect tmpRect = boundRect[idx];
+		Rect toPrint;
+		tmpRect += Size(tmpRect.width*RECT_AUGMENT ,tmpRect.height*RECT_AUGMENT);			  // Aumenta area di RECT_ARGUMENT
+		tmpRect -= Point((tmpRect.width*RECT_AUGMENT)/2 , (tmpRect.height*RECT_AUGMENT)/2 ); // Ricentra il rettangolo
+		
+		drawContours(cont, contours, idx, color, CV_FILLED, 8);
+		if(tmpRect.x>0 && tmpRect.y>0 && tmpRect.x+tmpRect.width < gray.cols && tmpRect.y+tmpRect.height < gray.rows){ //Se il nuovo rettangolo allargato
+																													// NON esce fuori, accettalo
+			regionsOfInterest.push_back(img(tmpRect));
+			toPrint = tmpRect;
+		}
+		else{
+			toPrint = boundRect[idx];
+			regionsOfInterest.push_back(img(boundRect[idx]));
+		}
+		rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
+		circle( cont, center[idx], (int)radius[idx], color, 2, 8, 0 );
+
+	}
+	//out = out+cont;
+	bitwise_xor(out,cont,out);
+	
+	namedWindow("out",WINDOW_NORMAL);
+	imshow("out",out);
+}
+
 void detect(Mat img, vector<Mat>& regionsOfInterest){
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray, hist;
+
 	Mat out = Mat::zeros(Size(1280,960), CV_8U);
 	Mat bin = Mat::zeros(Size(1280,960), CV_8U);
 	Mat morph = Mat::zeros(Size(1280,960), CV_8U);
@@ -165,31 +244,32 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 	vector<int> indexes;
 	
 	/***************************************/
-	rationedImage = computeRationedImage(BGRbands);
+	//rationedImage = computeRationedImage(BGRbands);
 	maskHSV		  = detectShadows(img);
-	noBackMask    = backgroundEstimation(BGRbands);
+	noBackMask    = backgroundRemoval(img);
 	/*
 	tmp = applyMaskBandByBand(maskHSV,BGRbands);
-	split(tmp,BGRbands);
-	tmp = applyMaskBandByBand(noBackMask,BGRbands);
-	*/
+	split(tmp,BGRbands);*/
+	//tmp = applyMaskBandByBand(noBackMask,BGRbands);
+	
 	/*Abbassamento risoluzione radiometrica per rimozione dettagli*/
 	tmp = img/255;
 	tmp = tmp*240+15; //+15 per mappare il nero nel bin 15 in modo da non perdere eventuali oggettineri
+	imshow("tmp",tmp);
 	cvtColor(tmp,gray,CV_BGR2GRAY);
-	gray = gray + rationedImage;
-	//gray = (gray!=0)*255;
+	//gray = gray + rationedImage;
+	gray = (gray!=0);
 	imshow("gray",gray);
 	/*Calcolo histogramma per identificazione valori di pixel significativi ( != 0 )*/
 	calcHist(&gray,1,0,Mat(),hist,1,&histSize,&histRange);
 
 	/*Calcolo gli indici corrispondenti ai bin dove c'è almeno un valore.*/
 	
-	for(int r=0; r<hist.rows;r++) /*Escludo bin 0 -> background****** da non escludere se dobbiamo fare detection di cose nere*/
+	for(int r=0; r<hist.rows;r++){ /*Escludo bin 0 -> background****** da non escludere se dobbiamo fare detection di cose nere*/
 		for(int c=0; c<hist.cols;c++)
 			if(hist.at<int>(r,c)!=0)
 				indexes.push_back(r);
-	
+	}
 	/*Estrazione componenti connesse di interesse*/
 	
 	for(int i=0;i<indexes.size();i++){
@@ -202,8 +282,8 @@ void detect(Mat img, vector<Mat>& regionsOfInterest){
 		bitwise_and(bin, noBackMask ,bin);
 	
 		/*Operazioni Morfologiche, kernel circolare*/
-	//	morphologyEx(bin, morph, MORPH_ERODE, kernelEr, Point(-1, -1));
-		morphologyEx(bin, morph, MORPH_OPEN, kernelOp, Point(-1, -1));
+		morphologyEx(bin, morph, MORPH_ERODE, kernelEr, Point(-1, -1));
+		morphologyEx(morph, morph, MORPH_OPEN, kernelOp, Point(-1, -1));
 
 		/*Ricerca componenti connesse come meno di un certo numero di pixel*/
 		

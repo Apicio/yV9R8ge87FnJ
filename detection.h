@@ -6,7 +6,7 @@
 
 #define MAX_AREA 40000
 #define MIN_AREA 1000
-#define RECT_AUGMENT 0.1
+#define RECT_AUGMENT 0.07
 #define SHADOW_THRESH 126
 #define MEAN_OFFSET
 
@@ -19,6 +19,7 @@ using namespace cv;
  * @param regionsOfInterest Array of ROIs detected
  */
 void detect(Mat image, vector<Mat>& regionsOfInterest);
+void detect2(Mat image, vector<Mat>& regionsOfInterest);
 vector<double> computeArea(vector<vector<Point> > contours);
 
 #endif // DETECTION_H
