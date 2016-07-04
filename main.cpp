@@ -18,7 +18,7 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	const string img_file = "data_set_27_05/59.jpg";
+	const string img_file = "data_set_27_05/67.jpg";
 	Mat image; vector<Mat> rectangles;
 
 	image = imread(img_file,  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!

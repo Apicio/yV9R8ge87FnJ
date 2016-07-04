@@ -4,9 +4,11 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 
+#define HEIGH 1280
+#define WIDTH 960
 #define MAX_AREA 40000
 #define MIN_AREA 1000
-#define RECT_AUGMENT 0.07
+#define RECT_AUGMENT 0
 #define SHADOW_THRESH 126
 #define MEAN_OFFSET
 
