@@ -131,10 +131,9 @@ Mat backgroundRemoval(Mat& img){
 	Mat imgHSV; Mat HSVbands[3]; Mat toRet = img.clone(); Mat mask1,mask2,maskTOT;
 	cvtColor(img,imgHSV,CV_BGR2HSV);
 	split(imgHSV,HSVbands);
-	mask1 = HSVbands[0]*2 <=70;
-	mask2 = HSVbands[0]*2 >=180;
+	mask1 = HSVbands[0]*2 <=90;
+	mask2 = HSVbands[0]*2 >=240;
 	maskTOT = mask1 + mask2;
-	imshow("backmask",maskTOT*100);
 	return maskTOT;
 
 }
@@ -154,31 +153,38 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest){
 	Mat out = Mat::zeros(Size(1280,960), CV_8U);
 	Mat masked = Mat::zeros(Size(1280,960), CV_8U);
 	Mat morph = Mat::zeros(Size(1280,960), CV_8U);
+	Mat bwmorph = Mat::zeros(Size(1280,960), CV_8U);
 	Mat cont = Mat::zeros(Size(1280,960), CV_8U);
 	Mat maskHSV = Mat::zeros(Size(1280,960), CV_8U);
 	Mat noBackMask = Mat::zeros(Size(1280,960), CV_8U);
-	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(2,2));
-	Mat kernelOp = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
+	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(7,7));
+	Mat kernelOp = getStructuringElement(MORPH_ELLIPSE,Size(15,15));
+	vector<Mat> BGRbands;  split(img,BGRbands);
 	vector< vector<Point> > contours;
 	maskHSV		  = detectShadows(img);
 	noBackMask    = backgroundRemoval(img);
 	/***************************************/
 
 	
-	cvtColor(img,gray,CV_BGR2GRAY);
+	/*cvtColor(img,gray,CV_BGR2GRAY);
 	gray = (gray!=0);
-	imshow("gray",gray);
+	imshow("gray",gray);*/
 	/*Rimozione Ombre e Background*/
-		
-	bitwise_and(gray, maskHSV , masked);
+	masked = applyMaskBandByBand(maskHSV,BGRbands); split(masked,BGRbands);
+	masked = applyMaskBandByBand(noBackMask,BGRbands);
+	/*bitwise_and(gray, maskHSV , masked);
 	bitwise_and(masked, noBackMask ,masked);
-	
+	*/
 	/*Operazioni Morfologiche, kernel circolare*/
-	morphologyEx(masked, morph, MORPH_ERODE, kernelEr, Point(-1, -1));
-	morphologyEx(morph, morph, MORPH_OPEN, kernelOp, Point(-1, -1));
-
+	/*morphologyEx(masked, morph, MORPH_ERODE, kernelEr, Point(-1, -1));
+	morphologyEx(morph, morph, MORPH_OPEN, kernelOp, Point(-1, -1));*/
+	erode(masked,morph,kernelEr);
+	dilate(morph,morph,kernelOp);
+	imshow("morg",morph);
 	/*Ricerca componenti connesse come meno di un certo numero di pixel*/
-	findContours(morph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+	 
+	cvtColor(morph,bwmorph,CV_BGR2GRAY);
+	findContours(bwmorph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 
 	vector<double> areas = computeArea(contours);
 	for(int j = areas.size()-1; j>=0; j--){
@@ -205,14 +211,14 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest){
 		tmpRect -= Point((tmpRect.width*RECT_AUGMENT)/2 , (tmpRect.height*RECT_AUGMENT)/2 ); // Ricentra il rettangolo
 		
 		drawContours(cont, contours, idx, color, CV_FILLED, 8);
-		if(tmpRect.x>0 && tmpRect.y>0 && tmpRect.x+tmpRect.width < gray.cols && tmpRect.y+tmpRect.height < gray.rows){ //Se il nuovo rettangolo allargato
+		if(tmpRect.x>0 && tmpRect.y>0 && tmpRect.x+tmpRect.width < morph.cols && tmpRect.y+tmpRect.height < morph.rows){ //Se il nuovo rettangolo allargato
 																													// NON esce fuori, accettalo
-			regionsOfInterest.push_back(img(tmpRect));
+			regionsOfInterest.push_back(morph(tmpRect));
 			toPrint = tmpRect;
 		}
 		else{
 			toPrint = boundRect[idx];
-			regionsOfInterest.push_back(img(boundRect[idx]));
+			regionsOfInterest.push_back(morph(boundRect[idx]));
 		}
 		rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
 		circle( cont, center[idx], (int)radius[idx], color, 2, 8, 0 );
