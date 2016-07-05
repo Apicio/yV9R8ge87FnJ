@@ -22,7 +22,7 @@ public:
 	* @param type nome della classe 
 	* @return The class label, or 0 for rejection
 	*/
-	void extract(std::string pathToDir, std::string pathToFile, std::string type);
+	void extract(std::vector<string> pathToDir, std::string pathToFile, std::vector<string> types);
 	std::string readMeanHueAndMoments(cv::Mat image);
 };
 

@@ -82,11 +82,19 @@ int main(int argc, char* argv[])
 #endif
 
 	FeatExtract fe;
-	fe.extract("../detection/mela_rossa/","melaRossa.csv","mela_rossa");
-	fe.extract("../detection/mela_gialla/","melaGialla.csv","mela_gialla");
-	fe.extract("../detection/bicchiere/","bicchiere.csv","bicchiere");
-	fe.extract("../detection/tazzina/","tazzina.csv","tazzina");
-	waitKey(1);
+	vector<string> dirs,types;
+	dirs.push_back("../detection/mela_rossa/");
+	types.push_back("mela_rossa");
+	dirs.push_back("../detection/mela_gialla/");
+	types.push_back("mela_gialla");
+	dirs.push_back("../detection/bicchiere/");
+	types.push_back("bicchiere");
+	dirs.push_back("../detection/tazzina/");
+	types.push_back("tazzina");
+
+	fe.extract(dirs,"featWeka.csv",types);
+	
+	waitKey(0);
 	system("pause");
 
 	
