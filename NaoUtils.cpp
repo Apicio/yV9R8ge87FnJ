@@ -13,7 +13,7 @@ void NaoUtils::explore(){
   try {
 	  AL::ALMotionProxy motionProx(NAOIP, NAOPORT);
 	  AL::ALRobotPostureProxy posture(NAOIP, NAOPORT);
-	 posture.goToPosture("Stand",1.0); 
+	  posture.goToPosture("Stand",1.0); 
 	
 	  
     /** Create a ALMotionProxy to call the methods to move NAO's head.
@@ -96,7 +96,7 @@ void NaoUtils::writeImages(const std::string& naoIP, const std::string& path){
     /** Tells to ALVideoDevice that it can give back the image buffer to the
     * driver. Optional after a getImageRemote but MANDATORY after a getImageLocal.*/
     camProx.releaseImage(subscriberID);
-
+	
   }
   /** Cleanup.*/
   camProx.unsubscribe(subscriberID);

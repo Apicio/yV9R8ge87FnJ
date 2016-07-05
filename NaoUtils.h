@@ -19,7 +19,6 @@
 #define NAOPORT 9559
 #define SAVEPATH "C:\\imgCatt\\"
 using namespace AL;
-using namespace std;
 class NaoUtils
 {
 

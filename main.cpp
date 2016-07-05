@@ -14,18 +14,18 @@
 #include "detection.h"
 #include "classification.h"
 #include "Classiwekation.h"
-
+#include "FeatExtract.h"
 #define FOLDER  "data_set_27_05/"
 
-#define WRITE 1
+#define WRITE 0
 using namespace cv;
 using namespace std;
 
 int main(int argc, char* argv[])
 {
-	Classiwekation weka;
-	weka.ClassTest();
-#if WRITE
+/*	Classiwekation weka ;
+	weka.ClassTest(); */
+#if 0
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles;
 
@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
 	waitKey(0);
 
 #endif
-#if !WRITE
+#if 0
 	stringstream img_file; img_file<< "data_set_27_05/47.jpg";
 	Mat image; vector<Mat> rectangles;
 	image = imread(img_file.str(),  IMREAD_COLOR)+1;
@@ -80,5 +80,11 @@ int main(int argc, char* argv[])
 	}
 	waitKey(0); // Wait for a keystroke in the window
 #endif
+
+	FeatExtract fe;
+	fe.extract(FOLDER,"Prova.csv","tazza");
+	waitKey(1);
+	system("pause");
+
 	
 }
