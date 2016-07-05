@@ -1,5 +1,4 @@
 #pragma once
-#include "StdAfx.h"
 #include <stdio.h>
 #include <jni.h>
 #include <string.h>

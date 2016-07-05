@@ -13,6 +13,7 @@
 #include <iostream>
 #include "detection.h"
 #include "classification.h"
+#include "Classiwekation.h"
 
 #define FOLDER  "data_set_27_05/"
 
@@ -22,6 +23,8 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
+	Classiwekation weka;
+	weka.ClassTest();
 #if WRITE
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles;
