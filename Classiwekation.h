@@ -5,7 +5,7 @@
 
 #define PATH_SEPARATOR ';' /* define it to be ':' on Solaris */
 #define USER_CLASSPATH "." /* where Prog.class is */
-#define OPTION_STRING "-Djava.class.path=C:\\JavaSrc\\TestStruct;C:\\JavaSrc\\TestStruct\\weka.jar"
+#define OPTION_STRING "-Djava.class.path=\\JavaSrc\\TestStruct;\\JavaSrc\\TestStruct\\weka.jar"
 
 struct ControlDetail
 {
