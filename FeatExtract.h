@@ -15,6 +15,13 @@ public:
 	std::ofstream writer;
 	FeatExtract(void);
 	~FeatExtract(void);
+	/**
+	* @brief Estrae un insieme di features. NOTA BENE: aggiungere alla costante HEADER eventuali nuove features
+	* @param pathToDir Cartella in cui sono presenti le immagini
+	* @param pathToFile file in cui salvare le features 
+	* @param type nome della classe 
+	* @return The class label, or 0 for rejection
+	*/
 	void extract(std::string pathToDir, std::string pathToFile, std::string type);
 	std::string readMeanHueAndMoments(cv::Mat image);
 };

@@ -82,7 +82,10 @@ int main(int argc, char* argv[])
 #endif
 
 	FeatExtract fe;
-	fe.extract(FOLDER,"Prova.csv","tazza");
+	fe.extract("../detection/mela_rossa/","melaRossa.csv","mela_rossa");
+	fe.extract("../detection/mela_gialla/","melaGialla.csv","mela_gialla");
+	fe.extract("../detection/bicchiere/","bicchiere.csv","bicchiere");
+	fe.extract("../detection/tazzina/","tazzina.csv","tazzina");
 	waitKey(1);
 	system("pause");
 

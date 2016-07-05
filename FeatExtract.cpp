@@ -24,7 +24,7 @@ std::string FeatExtract::readMeanHueAndMoments(cv::Mat image){
 
 void FeatExtract::extract(std::string pathToDir, std::string pathToWrite, std::string type){
 	 DIR *pDIR;
-	 cv::Mat readed;
+	 cv::Mat readed, img;
 	 std::stringstream s1,s2;
 	 writer.open(pathToWrite,ios::out);
 	 writer<<HEADER<<"class"<<endl;
@@ -35,12 +35,14 @@ void FeatExtract::extract(std::string pathToDir, std::string pathToWrite, std::s
 							s1 <<pathToDir<< entry->d_name;
 							std::cout<<s1.str();
 							readed = cv::imread(s1.str());
-							writer<<readMeanHueAndMoments(readed);
+							cv::resize(readed,img,cv::Size(200,200),0,0,cv::INTER_LINEAR);
+							writer<<readMeanHueAndMoments(img);
 							writer<<type<<endl;
 							s1.str("");
 						}
                 }
                 closedir(pDIR);
+				writer.close();
         }
 
 }
