@@ -23,5 +23,7 @@ using namespace cv;
 void detect(Mat image, vector<Mat>& regionsOfInterest);
 void detect2(Mat image, vector<Mat>& regionsOfInterest);
 vector<double> computeArea(vector<vector<Point> > contours);
+Mat backgroundRemoval(Mat& img);
+Mat applyMaskBandByBand(Mat mask, vector<Mat> bands);
 
 #endif // DETECTION_H

@@ -11,6 +11,7 @@
 #include <alerror\alerror.h>
 #include <alproxies\altexttospeechproxy.h>
 #include <iostream>
+#include "NaoUtils.h"
 #include "detection.h"
 #include "classification.h"
 #include "Classiwekation.h"
@@ -80,10 +81,10 @@ int main(int argc, char* argv[])
 	}
 	waitKey(0); // Wait for a keystroke in the window
 #endif
-
+#if 0
 	FeatExtract fe;
 	vector<string> dirs,types;
-	dirs.push_back("../detection/mela_rossa/");
+/*	dirs.push_back("../detection/mela_rossa/");
 	types.push_back("mela_rossa");
 	dirs.push_back("../detection/mela_gialla/");
 	types.push_back("mela_gialla");
@@ -92,10 +93,24 @@ int main(int argc, char* argv[])
 	dirs.push_back("../detection/tazzina/");
 	types.push_back("tazzina");
 
-	fe.extract(dirs,"featWeka.csv",types);
+	fe.extract(dirs,"featWeka.csv",types,false);
+	*/
+	dirs.push_back("../detectionNoMorph/mela_rossa/");
+	types.push_back("mela_rossa");
+	dirs.push_back("../detectionNoMorph/mela_gialla/");
+	types.push_back("mela_gialla");
+	dirs.push_back("../detectionNoMorph/bicchiere/");
+	types.push_back("bicchiere");
+	dirs.push_back("../detectionNoMorph/tazzina/");
+	types.push_back("tazzina");
+
+	fe.extract(dirs,"featWekaNoMorph.csv",types,true);
 	
 	waitKey(0);
 	system("pause");
 
-	
+#endif
+	NaoUtils n;
+	n.explore();
+	system("pause");
 }

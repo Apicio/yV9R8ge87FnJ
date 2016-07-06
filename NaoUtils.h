@@ -13,9 +13,12 @@
 #include <alerror/alerror.h>
 // Opencv includes.
 #include <opencv2/core/core.hpp>
+#include <math.h>
 #include <opencv2/highgui/highgui.hpp>
+#include <time.h>
+#include <stdlib.h>
 
-#define NAOIP "192.168.1.101"
+#define NAOIP "169.254.28.227"
 #define NAOPORT 9559
 #define SAVEPATH "C:\\imgCatt\\"
 using namespace AL;

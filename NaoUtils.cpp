@@ -35,14 +35,14 @@ void NaoUtils::explore(){
    motionProx.stiffnessInterpolation(jointPitch, stiffness, time);
 
 	/** Set the target angle list, in radians. */
-    AL::ALValue targetAnglesPitch = AL::ALValue::array(0.5f);
+    AL::ALValue targetAnglesPitch = AL::ALValue::array(0.4f);
 	 /** Set the corresponding time lists, in seconds. */
     AL::ALValue targetTimesPitch = AL::ALValue::array(1.0f);
     bool isAbsolute = true;
-	motionProx.angleInterpolation(jointPitch, targetAnglesPitch, targetTimesPitch, isAbsolute);
+	motionProx.post.angleInterpolation(jointPitch, targetAnglesPitch, targetTimesPitch, isAbsolute);
 
-    AL::ALValue targetAnglesYaw = AL::ALValue::array(-1.5f,1.5f,0.0f);
-    AL::ALValue targetTimesYaw = AL::ALValue::array(10.0f,18.0f,26.0f);
+    AL::ALValue targetAnglesYaw = AL::ALValue::array(-1.2f,1.2f,0.0f);
+    AL::ALValue targetTimesYaw = AL::ALValue::array(7.0f,11.0f,15.0f);
  
     /** Call the angle interpolation method. The joint will reach the
     * desired angles at the desired times.
@@ -50,10 +50,11 @@ void NaoUtils::explore(){
     motionProx.post.angleInterpolation(jointYaw, targetAnglesYaw, targetTimesYaw, isAbsolute);
 	writeImages(NAOIP,SAVEPATH);
     /** Remove the stiffness on the head. */
-    stiffness = 0.0f; time = 1.0f;
-    motionProx.stiffnessInterpolation(jointPitch, stiffness, time);
-    motionProx.stiffnessInterpolation(jointYaw, stiffness, time);
+    stiffness = 0.0f; time = 3.5f;
+	motionProx.stiffnessInterpolation(jointPitch, stiffness, time);
+	motionProx.stiffnessInterpolation(jointYaw, stiffness, time);
 	motionProx.rest();
+	
   }
   catch (const AL::ALError& e) {
     std::cerr << "Caught exception: " << e.what() << std::endl;
@@ -70,9 +71,9 @@ void NaoUtils::writeImages(const std::string& naoIP, const std::string& path){
 
   /** Create an cv::Mat header to wrap into an opencv image.*/
   cv::Mat imgHeader = cv::Mat(cv::Size(640, 480), CV_8UC3);
-
+  srand(time(NULL));
   /** Main loop. Exit when pressing ESC.*/
-  for(int i=0;i<10;i++){
+  for(int i=0;i<15;i++){
 	std::stringstream ss;
     /** Retrieve an image from the camera.
     * The image is returned in the form of a container object, with the
@@ -90,7 +91,7 @@ void NaoUtils::writeImages(const std::string& naoIP, const std::string& path){
     /** Access the image buffer (6th field) and assign it to the opencv image
     * container. */
     imgHeader.data = (uchar*) img[6].GetBinary();
-	ss<<path<<"img"<< i <<".jpg";
+	ss<<path<<"img"<< rand() <<".jpg";
 	cv::imwrite(ss.str(),imgHeader);
 
     /** Tells to ALVideoDevice that it can give back the image buffer to the
@@ -100,6 +101,8 @@ void NaoUtils::writeImages(const std::string& naoIP, const std::string& path){
   }
   /** Cleanup.*/
   camProx.unsubscribe(subscriberID);
+
+
 }
 
 NaoUtils::~NaoUtils(void)
