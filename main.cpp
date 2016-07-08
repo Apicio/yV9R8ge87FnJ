@@ -8,12 +8,13 @@
  */
 
 #include <iostream>
-
+#include <alerror\alerror.h>
+#include <alproxies\altexttospeechproxy.h>
 #include <iostream>
 #include "NaoUtils.h"
 #include "detection.h"
-
-
+#include "classification.h"
+#include "Classiwekation.h"
 #include "FeatExtract.h"
 #define FOLDER  "data_set_27_05/"
 

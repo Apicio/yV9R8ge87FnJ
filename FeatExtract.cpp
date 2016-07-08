@@ -17,7 +17,6 @@ std::string FeatExtract::readMeanHueAndMoments(cv::Mat image){
     s << meanHue / 360<<", ";
     for (int i = 0; i < 7; i++)
        s << hu[i]<<",";
-	
 	return s.str();
 }
 
@@ -29,7 +28,6 @@ std::string FeatExtract::extractDuringMovement(cv::Mat img,  bool toMask){
 	 vector<Mat> bands;
 	 std::stringstream s1,s2;
 	 std::string currDir,currType;
-	 
 	 if(toMask){
 	   mask = backgroundRemoval(readed);
 	   split(readed,bands);

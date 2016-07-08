@@ -9,12 +9,20 @@ void NaoUtils::explore(){
   /** The name of the joint to be moved. */
   const AL::ALValue jointYaw = "HeadYaw";
   const AL::ALValue jointPitch = "HeadPitch";
+  
   try {
 	  AL::ALMotionProxy motionProx(NAOIP, NAOPORT);
 	  AL::ALRobotPostureProxy posture(NAOIP, NAOPORT);
 	  posture.goToPosture("Stand",1.0); 
-	 
-	  	
+	
+	  
+    /** Create a ALMotionProxy to call the methods to move NAO's head.
+    * Arguments for the constructor are:
+    * - IP adress of the robot
+    * - port on which NAOqi is listening, by default 9559
+    */
+   
+	
     /** Make sure the head is stiff to be able to move it.
     * To do so, make the stiffness go to the maximum in one second.
     */
@@ -25,7 +33,7 @@ void NaoUtils::explore(){
     /** Call the stiffness interpolation method. */
    motionProx.stiffnessInterpolation(jointYaw, stiffness, time);
    motionProx.stiffnessInterpolation(jointPitch, stiffness, time);
-   
+
 	/** Set the target angle list, in radians. */
     AL::ALValue targetAnglesPitch = AL::ALValue::array(0.4f);
 	 /** Set the corresponding time lists, in seconds. */
@@ -65,7 +73,7 @@ void NaoUtils::writeImages(const std::string& naoIP, const std::string& path){
   cv::Mat imgHeader = cv::Mat(cv::Size(640, 480), CV_8UC3);
   srand(time(NULL));
   /** Main loop. Exit when pressing ESC.*/
-  for(int i=0;i<25;i++){
+  for(int i=0;i<15;i++){
 	std::stringstream ss;
     /** Retrieve an image from the camera.
     * The image is returned in the form of a container object, with the
@@ -93,6 +101,8 @@ void NaoUtils::writeImages(const std::string& naoIP, const std::string& path){
   }
   /** Cleanup.*/
   camProx.unsubscribe(subscriberID);
+
+
 }
 
 NaoUtils::~NaoUtils(void)
