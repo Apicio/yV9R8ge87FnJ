@@ -6,8 +6,8 @@
 #include <fstream> 
 #include <math.h>
 
-#include "ArucoSrc\aruco.h"
-#include "ArucoSrc\cvdrawingutils.h"
+#include "aruco.h"
+#include "cvdrawingutils.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 

@@ -117,8 +117,8 @@ int main(int argc, char* argv[])
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles; double angle=-1;
 	Mat sharp;
-	for(int i=1;i<22;i++){
-		img_file<<"Markers\\arrow4\\im ("<<i<<").jpg";
+	for(int i=2;i<7;i++){
+		img_file<<"Markers\\arrow4\\im("<<i<<").jpg";
 		cout<<img_file.str()<<endl;
 		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
 		img_file.str(string());
