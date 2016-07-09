@@ -8,13 +8,11 @@
  */
 
 #include <iostream>
-#include <alerror\alerror.h>
-#include <alproxies\altexttospeechproxy.h>
 #include <iostream>
-#include "NaoUtils.h"
+//#include "NaoUtils.h"
 #include "detection.h"
-#include "classification.h"
-#include "Classiwekation.h"
+#include "TheWalkingNao.h"
+
 #include "FeatExtract.h"
 #define FOLDER  "data_set_27_05/"
 
@@ -29,7 +27,7 @@ int main(int argc, char* argv[])
 #if 0
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles;
-
+	
 	for(int i=0;i<156;i++){
 		img_file<<FOLDER<<i<<".jpg";
 		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
@@ -70,7 +68,6 @@ int main(int argc, char* argv[])
 			cout << "Could not open or find the image" << std::endl;
 			return -1;
 		}
-
 		detect2(image,rectangles);
 		stringstream s;
 	for(int i=0;i<rectangles.size();i++){
@@ -110,7 +107,29 @@ int main(int argc, char* argv[])
 	system("pause");
 
 #endif
+
+#if 0
 	NaoUtils n;
 	n.explore();
 	system("pause");
+#endif
+	TheWalkingNao twn;
+	stringstream img_file;// = "data_set_27_05/123.jpg";
+	Mat image; vector<Mat> rectangles; double angle=-1;
+	Mat sharp;
+	for(int i=1;i<22;i++){
+		img_file<<"Markers\\arrow4\\im ("<<i<<").jpg";
+		cout<<img_file.str()<<endl;
+		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
+		img_file.str(string());
+
+		if(image.rows < 640 ||image.cols <480)
+			resize(image, image, Size(640,480), 0, 0, INTER_LINEAR);
+		twn.ArucoFind(image,angle);
+		cout<<"Angolo" <<angle<<endl;
+		imshow("img",image);
+		waitKey(0);
+		
+	}
+
 }

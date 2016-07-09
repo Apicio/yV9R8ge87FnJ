@@ -3,6 +3,8 @@
 
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include "ArucoSrc\aruco.h"
+#include "ArucoSrc\cvdrawingutils.h"
 
 #define HEIGH 1280
 #define WIDTH 960
@@ -25,5 +27,6 @@ void detect2(Mat image, vector<Mat>& regionsOfInterest);
 vector<double> computeArea(vector<vector<Point> > contours);
 Mat backgroundRemoval(Mat& img);
 Mat applyMaskBandByBand(Mat mask, vector<Mat> bands);
+Mat sharpening(Mat in, double sigma);
 
 #endif // DETECTION_H

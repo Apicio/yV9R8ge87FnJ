@@ -81,53 +81,6 @@ Mat computeRationedImage(vector<Mat> bands){
 	imadjust(toRet,toRet);
 	return toRet;
 }   
-#if 0
-Mat backgroundEstimation(Mat img){
-	Mat tmp, toReturn; Size dim = img.size();
-	Mat stddev, mean; vector<double> variances, means;
-	int ratio = 10; double minVariance=1000;
-	double minpx; double maxpx;
-	Size rectDim = Size(dim.width/ratio,dim.height/ratio);
-	Rect minRect;
-	cvtColor(img,tmp, CV_BGR2GRAY);
-	for(int r=0;r<tmp.rows;r+=rectDim.height)
-		for(int c=0;c<tmp.cols;c+=rectDim.width){
-			Rect rett(r,c,rectDim.width,rectDim.height);
-			meanStdDev(tmp(rett),mean,stddev);
-			means.push_back(mean.at<double>(0,0));
-			variances.push_back(stddev.at<double>(0,0)*stddev.at<double>(0,0));
-			/*Bassa varianza -> colori uniformi -> probabile sfondo*/
-			double tmp = *min_element(variances.begin(),variances.end());
-			if(tmp<minVariance){
-				minVariance = tmp;
-				minRect = rett;
-			}
-		}
-	/*Trova il minimo (minpx) ed il massimo (maxpx) nel rettangolo con minima varianza. Dall'immagine originale mettiamo
-	a 0 tutto quello appartenente a [minpx,maxpx]*/
-		minMaxLoc(tmp(minRect),&minpx,&maxpx);
-		toReturn = img>minpx
-}
-#endif
-/*
-Mat backgroundEstimation(vector<Mat> bands){
-	
-	Mat mask, matMean,stddev; double mean, variance;
-	Mat newBands[3];
-	for(int i = 0; i<bands.size() ;i++){
-		meanStdDev(bands[i],matMean,stddev);
-		variance = stddev.at<double>(0,0);
-		mean = matMean.at<double>(0,0);
-		cout<<"media"<<i<<" "<<mean<<endl<<"varianza"<<i<<" "<<variance<<endl;
-		bitwise_xor( bands[i] > (mean+variance/3), bands[i] < (mean-variance/3), newBands[i]);
-	
-	}
-	bitwise_and(newBands[0],newBands[1],mask);
-	bitwise_and(mask,newBands[2],mask);
-	imshow("nobackmak",mask);;
-	return mask;
-}
-*/
 
 Mat backgroundRemoval(Mat& img){
 	Mat imgHSV; Mat HSVbands[3]; Mat toRet = img.clone(); Mat mask1,mask2,maskTOT;
@@ -150,6 +103,7 @@ Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 	merge(newBands,3,toReturn);
 	return toReturn;
 }
+
 
 void detect2(Mat img, vector<Mat>& regionsOfInterest){
 	/*************INIZIALIZZAZIONI**********/
@@ -250,6 +204,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest){
 	/*namedWindow("out",WINDOW_NORMAL);
 	imshow("out",out);*/
 }
+
 
 //void detect(Mat img, vector<Mat>& regionsOfInterest){
 //	/*************INIZIALIZZAZIONI**********/
