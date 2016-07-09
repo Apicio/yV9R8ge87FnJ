@@ -16,16 +16,34 @@
 using namespace cv;
 using namespace aruco;
 
-
-
-
+/*
+double fmin(double element[], int size){
+	double small = element[0];
+	for(int i=0; i<size; i++){
+		if (element[i] < small)
+			small = element[i];
+	}
+	return small;
+}
+double fmax(double element[], int size){
+	double small = element[0];
+	for(int i=0; i<size; i++){
+		if (element[i] > small)
+			small = element[i];
+	}
+	return small;
+}
+*/
+enum Direction {NORTH,SOUTH,WEST,OVEST, NORTHWEST,SOUTHWEST,SOUTHOVEST,NORDOVEST };
 class TheWalkingNao
 {
 private:
 	int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy);
 	double computeAngle(Marker m, CameraParameters cam);
+	double fmin(double element[], int size);
+	double fmax(double element[], int size);
 public:
 	TheWalkingNao(void);
-	void ArucoFind(Mat img, double& angle);
+	void ArucoFind(Mat img, double& angle,bool toRemoveMarkers);
 	~TheWalkingNao(void);
 };

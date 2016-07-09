@@ -3,8 +3,6 @@
 
 #include <opencv2/opencv.hpp>
 #include <vector>
-#include "ArucoSrc\aruco.h"
-#include "ArucoSrc\cvdrawingutils.h"
 
 #define HEIGH 1280
 #define WIDTH 960
