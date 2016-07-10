@@ -34,6 +34,8 @@ or implied, of Rafael Muñoz Salinas.
 #include <fstream>
 #include "arucofidmarkers.h"
 #include <valarray>
+#define SHARP 0
+#define SOGLIA 0.2
 using namespace std;
 using namespace cv;
 
@@ -118,6 +120,130 @@ void MarkerDetector::detect ( const  cv::Mat &input,std::vector<Marker> &detecte
  *
  *
  ************************************/
+void MarkerDetector::drawLine(cv::Mat &Image, vector<vector<Point2f> > Points, int i){
+	vector<Point2f> imagePoints = Points.at(i);
+	cv::line(Image,imagePoints[0],imagePoints[1],Scalar(0,0,255,255),2);
+    cv::line(Image,imagePoints[0],imagePoints[3],Scalar(0,255,0,255),2);
+    cv::line(Image,imagePoints[2],imagePoints[3],Scalar(255,0,0,255),2);
+	cv::line(Image,imagePoints[1],imagePoints[2],Scalar(255,255,0,255),2);
+	cv::line(Image,imagePoints[0],imagePoints[2],Scalar(255,0,255,255),2);
+	cv::line(Image,imagePoints[1],imagePoints[3],Scalar(0,255,255,255),2);
+}
+
+void MarkerDetector::setAll(Mat &in, int Xstart, int Ystart, int swidth, int value){
+	for(int i=Xstart; i<Xstart+swidth; i++){
+		for(int j=Ystart; j<Ystart+swidth; j++){
+			in.at<uchar>(j,i) = value;
+		}
+	}
+}
+
+void MarkerDetector::rotate_90n(cv::Mat &src, cv::Mat &dst, int angle)
+{
+    dst.create(src.size(), src.type());
+    if(angle == 270 || angle == -90){
+        // Rotate clockwise 270 degrees
+        cv::transpose(src, dst);
+        cv::flip(dst, dst, 0);
+    }else if(angle == 180 || angle == -180){
+        // Rotate clockwise 180 degrees
+        cv::flip(src, dst, -1);
+    }else if(angle == 90 || angle == -270){
+        // Rotate clockwise 90 degrees
+        cv::transpose(src, dst);
+        cv::flip(dst, dst, 1);
+    }else if(angle == 360 || angle == 0){
+        if(src.data != dst.data){
+            src.copyTo(dst);
+        }
+    }
+}
+
+void MarkerDetector::sharpMark(Mat input, vector<Mat > &out, int x, int y, bool doTh){
+	if(y>=7)
+		return;
+	Mat in;
+	input.copyTo(in);
+
+	assert(in.rows==in.cols);
+    cv::Mat grey;
+    if ( in.type()==CV_8UC1) 
+		grey=in;
+    else 
+		cv::cvtColor(in,grey,COLOR_BGR2GRAY); 
+	if(doTh)
+		threshold(grey, grey,125, 255, THRESH_BINARY|THRESH_OTSU);
+	if(countNonZero(grey)>(0.49*(grey.rows*grey.rows))){
+		return;
+	}
+	double th = SOGLIA;
+	double swidth=grey.rows/7;
+
+
+	// TODO USARE MATRICE DI BOOL
+    for (;y<7;y++)
+    {	
+        for (;x<7;x++)
+        {
+			if(y==0 || x == 0 || y == 6 || x == 6){
+				int Xstart=(x)*(swidth);
+				int Ystart=(y)*(swidth);
+				setAll(grey,Xstart,Ystart,swidth,0);
+			}else{
+
+            int Xstart=(x)*(swidth);
+            int Ystart=(y)*(swidth);
+            Mat square=grey(Rect(Xstart,Ystart,swidth,swidth));
+            int numWhite = countNonZero(square);
+			if(numWhite< (th*(swidth*swidth)))
+				setAll(grey,Xstart,Ystart,swidth,0);
+			else if(numWhite > ((1-th)*(swidth*swidth)))
+				setAll(grey,Xstart,Ystart,swidth,255);
+			else{
+				setAll(grey,Xstart,Ystart,swidth,255);
+				sharpMark(grey, out,  x+1, y, false);
+				setAll(grey,Xstart,Ystart,swidth,0);
+				}
+			}
+		}
+		x= 0;
+	}
+	
+	static cv::Mat id136=cv::Mat::zeros(in.rows,in.cols,CV_8UC1);
+	static cv::Mat id787=cv::Mat::zeros(in.rows,in.cols,CV_8UC1);
+
+	for (int ii = 0;ii<7;ii++)
+    {	
+        for (int jj = 0;jj<7;jj++)
+        {
+			int Xstart=(jj)*(swidth);
+            int Ystart=(ii)*(swidth);
+			if(jj==1 && ii==1 || jj==1 && ii==3 || jj==1 && ii==5 ||
+		       jj==2 && ii==2 || jj==2 && ii==4 ||
+			   jj==5 && ii==2 || jj==5 && ii==4 )
+				setAll(id136,Xstart,Ystart,swidth,255);
+			if(jj==1 && ii==2 || jj==1 && ii==3 || jj==1 && ii==4 ||
+		       jj==2 && ii==1 || jj==2 && ii==5 ||
+			   jj==3 && ii==1 || jj==3 && ii==3 || jj==3 && ii==5 || 
+			   jj==4 && ii==1 || jj==4 && ii==3 || jj==4 && ii==5 ||
+			   jj==5 && ii==3)
+				setAll(id787,Xstart,Ystart,swidth,255);	
+		}
+	}
+	// resize(image, image, Size(1280,960), 0, 0, INTER_LINEAR)
+	cv::Mat r_id136, r_id787;
+	for (int i=0; i<4; i++){
+		rotate_90n(id136, r_id136, 90*i);
+		double s = cv::sum( grey-r_id136 )[0];
+		if(s >= 0 && s < 1000)
+			out.push_back(grey);
+		rotate_90n(id787, r_id787, 90*i);
+		s = cv::sum( grey-r_id787 )[0];
+		if(s >= 0 && s < 1000)
+			out.push_back(grey);
+	}
+}
+
 void MarkerDetector::detect ( const  cv::Mat &input,vector<Marker> &detectedMarkers,Mat camMatrix ,Mat distCoeff ,float markerSizeMeters ,bool setYPerperdicular) throw ( cv::Exception )
 {
 
@@ -192,7 +318,14 @@ void MarkerDetector::detect ( const  cv::Mat &input,vector<Marker> &detectedMark
         if (_enableCylinderWarp)
             resW=warp_cylinder( grey,canonicalMarker,Size ( _markerWarpSize,_markerWarpSize ),MarkerCanditates[i] );
         else  resW=warp ( grey,canonicalMarker,Size ( _markerWarpSize,_markerWarpSize ),MarkerCanditates[i] );
-        if (resW) {
+#if SHARP
+		vector<Mat > out;
+		out.push_back(canonicalMarker);
+		for(int idx = 0; idx <out.size(); idx++){	
+			cout << idx << endl;
+			canonicalMarker = out.at(idx);
+#endif        		
+		if (resW) {
             int nRotations;
             int id= ( *markerIdDetector_ptrfunc ) ( canonicalMarker,nRotations );
             if ( id!=-1 )
@@ -203,10 +336,19 @@ void MarkerDetector::detect ( const  cv::Mat &input,vector<Marker> &detectedMark
                 //sort the points so that they are always in the same order no matter the camera orientation
                 std::rotate ( detectedMarkers.back().begin(),detectedMarkers.back().begin() +4-nRotations,detectedMarkers.back().end() );
             }
-            else _candidates.push_back ( MarkerCanditates[i] );
+            else {
+#if SHARP
+					if(out.size() == 1)
+						sharpMark(canonicalMarker, out, 0, 0, true);
+					if(idx !=0 && idx == out.size()-1)
+#endif
+						_candidates.push_back ( MarkerCanditates[i] );
+				}
+			}
         }
-       
+#if SHARP    
     }
+#endif
 
 
     ///refine the corner location if desired
