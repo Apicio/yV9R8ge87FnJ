@@ -5,7 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <fstream> 
-#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,"
+#define HEADER "BBoxComp,meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,"
 
 using namespace std;
 
@@ -25,6 +25,8 @@ public:
 	void extract(std::vector<string> pathToDir, std::string pathToFile, std::vector<string> types,bool toMask);
 	std::string FeatExtract::extractDuringMovement(cv::Mat img,  bool toMask);
 	std::string readMeanHueAndMoments(cv::Mat image);
+	std::string readStdDevHue(cv::Mat image);
+	double readBboxComparasion(cv::Mat image);
 	
 };
 

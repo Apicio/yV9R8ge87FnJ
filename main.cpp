@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 	}
 	waitKey(0); // Wait for a keystroke in the window
 #endif
-#if 0
+#if 1
 	FeatExtract fe;
 	vector<string> dirs,types;
 /*	dirs.push_back("../detection/mela_rossa/");
@@ -92,13 +92,13 @@ int main(int argc, char* argv[])
 
 	fe.extract(dirs,"featWeka.csv",types,false);
 	*/
-	dirs.push_back("../detectionNoMorph/mela_rossa/");
+	dirs.push_back("detectionNoMorph/mela_rossa/");
 	types.push_back("mela_rossa");
-	dirs.push_back("../detectionNoMorph/mela_gialla/");
+	dirs.push_back("detectionNoMorph/mela_gialla/");
 	types.push_back("mela_gialla");
-	dirs.push_back("../detectionNoMorph/bicchiere/");
+	dirs.push_back("detectionNoMorph/bicchiere/");
 	types.push_back("bicchiere");
-	dirs.push_back("../detectionNoMorph/tazzina/");
+	dirs.push_back("detectionNoMorph/tazzina/");
 	types.push_back("tazzina");
 
 	fe.extract(dirs,"featWekaNoMorph.csv",types,true);
@@ -113,6 +113,7 @@ int main(int argc, char* argv[])
 	n.explore();
 	system("pause");
 #endif
+#if 0
 	TheWalkingNao twn;
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles; double angle=-1;
@@ -131,5 +132,5 @@ int main(int argc, char* argv[])
 		waitKey(0);
 		
 	}
-
+#endif
 }

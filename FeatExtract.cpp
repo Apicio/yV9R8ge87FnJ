@@ -2,8 +2,7 @@
 #include "detection.h"
 
 FeatExtract::FeatExtract(void)
-{
-}
+{}
 
 std::string FeatExtract::readMeanHueAndMoments(cv::Mat image){
 	std::stringstream s;
@@ -20,7 +19,16 @@ std::string FeatExtract::readMeanHueAndMoments(cv::Mat image){
 	return s.str();
 }
 
-
+std::string FeatExtract::readStdDevHue(cv::Mat image){
+	std::stringstream s;
+    cv::Mat grayImage, hsvImage, pad, stdDevHue;
+	std::vector<Mat> hsvBands; 
+    cvtColor(image, hsvImage, CV_BGR2HSV);
+	split(hsvImage,hsvBands);
+	meanStdDev(hsvBands[0],pad,stdDevHue);
+	s<<stdDevHue.at<double>(0,0)<<",";
+	return s.str();
+}
 
 std::string FeatExtract::extractDuringMovement(cv::Mat img,  bool toMask){
 	 DIR *pDIR;
@@ -40,6 +48,11 @@ std::string FeatExtract::extractDuringMovement(cv::Mat img,  bool toMask){
 	return s1.str();
 }
 
+double FeatExtract::readBboxComparasion(cv::Mat image){
+	double rows = image.rows;
+	double cols = image.cols;
+	return rows/cols;
+}
 
 void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite, std::vector<string> types, bool toMask){
 	 DIR *pDIR;
@@ -65,11 +78,17 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
 					split(readed,bands);
 					readed = applyMaskBandByBand(mask,bands);
 				}
+
+				/*CALCOLO RAPPORTO FRA BBOX, NB: PRIMA DELLA RESIZE!!!*/
+				writer<<readBboxComparasion(readed)<<",";
+
 				cv::resize(readed,img,cv::Size(200,200),0,0,cv::INTER_LINEAR);
 				/*if(i%10==0)
 					imshow(s1.str(),readed);*/
 				writer<<readMeanHueAndMoments(img);
+				writer<<readStdDevHue(img);
 				writer<<currType<<endl;
+				
 				s1.str("");
 			  }
             }
