@@ -5,12 +5,19 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <fstream> 
-#define HEADER "BBoxComp,meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,"
+
+#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,entropy"
 
 using namespace std;
 
+
+
 class FeatExtract
 {
+	
+private:
+	double Log2( double n ) ;
+	cv::Mat histogram(cv::Mat);
 public:
 	std::ofstream writer;
 	FeatExtract(void);
@@ -26,7 +33,9 @@ public:
 	std::string FeatExtract::extractDuringMovement(cv::Mat img,  bool toMask);
 	std::string readMeanHueAndMoments(cv::Mat image);
 	std::string readStdDevHue(cv::Mat image);
+	double computeEntropy(cv::Mat );
 	double readBboxComparasion(cv::Mat image);
+	
 	
 };
 

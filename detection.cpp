@@ -13,6 +13,19 @@ vector<double> computeArea(vector<vector<Point> > contours){
 	return toret;
 }
 
+Point computeCentroid(vector<Point> contour){
+	Point toReturn; int x=0; int y=0;
+	for(int i=0;i<contour.size();i++){
+		x+=contour[i].x;
+		y+=contour[i].y;
+	}
+	x/=contour.size(); y/=contour.size();
+	toReturn.x=x; toReturn.y=y;
+	return toReturn;
+}
+
+
+
 Mat detectShadows(Mat img){
 	Mat imgHSV, maskHSV;
 	cvtColor(img, imgHSV, CV_BGR2HSV);
@@ -76,7 +89,7 @@ void imadjust(const Mat1b& src, Mat1b& dst, int tol = 1, Vec2i in = Vec2i(0, 255
 
 
 Mat computeRationedImage(vector<Mat> bands){
-	Mat1b toRet = Mat::zeros(Size(1280,960), CV_8U);
+	Mat1b toRet = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	toRet = bands[0]/bands[1] + bands[0]/bands[2] + bands[1]/bands[2] + bands[2]/bands[1] +	 bands[2]/bands[0] + bands[1]/bands[0];
 	imadjust(toRet,toRet);
 	return toRet;
@@ -86,8 +99,8 @@ Mat backgroundRemoval(Mat& img){
 	Mat imgHSV; Mat HSVbands[3]; Mat toRet = img.clone(); Mat mask1,mask2,maskTOT;
 	cvtColor(img,imgHSV,CV_BGR2HSV);
 	split(imgHSV,HSVbands);
-	mask1 = HSVbands[0] <= 65/2;
-	mask2 = HSVbands[0] >= 216/2;
+	mask1 = HSVbands[0] <= 90/2;
+	mask2 = HSVbands[0] >= 180/2;
 	//bitwise_and(mask1,mask2,maskTOT);
 	maskTOT = mask1 + mask2;
 	return maskTOT;
@@ -105,17 +118,17 @@ Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 }
 
 
-void detect2(Mat img, vector<Mat>& regionsOfInterest){
+void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<double>& area,vector<double>& distance){
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray;
-	Mat out = Mat::zeros(Size(1280,960), CV_8U);
-	Mat masked = Mat::zeros(Size(1280,960), CV_8U);
-	Mat morph = Mat::zeros(Size(1280,960), CV_8U);
-	Mat bwmorph = Mat::zeros(Size(1280,960), CV_8U);
-	Mat cont = Mat::zeros(Size(1280,960), CV_8U);
-	Mat maskHSV = Mat::zeros(Size(1280,960), CV_8U);
-	Mat noBackMask = Mat::zeros(Size(1280,960), CV_8U);
-	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
+	Mat out = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat masked = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat morph = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat bwmorph = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat cont = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat maskHSV = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat noBackMask = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(9,9));
 	Mat thMasked; Mat thOrig; Mat bwOrig; Mat bwNoBackMask;
 	cout<<kernelEr<<endl;
 	Mat kernelOp = getStructuringElement(MORPH_ELLIPSE,Size(13,13));
@@ -133,13 +146,13 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest){
 	masked = applyMaskBandByBand(noBackMask,BGRbands);
 	cvtColor(masked,bwNoBackMask,CV_BGR2GRAY);
 	cvtColor(img,bwOrig,CV_BGR2GRAY);
-	threshold(bwOrig,thOrig,180,255,THRESH_BINARY);
-	threshold(bwNoBackMask,thMasked,180,255,THRESH_BINARY);
+	threshold(bwOrig,thOrig,160,255,THRESH_BINARY);
+	threshold(bwNoBackMask,thMasked,160,255,THRESH_BINARY);
 
 	thOrig = thOrig - thMasked;
 	vector<Mat> multiThOrig; multiThOrig.push_back(thOrig); multiThOrig.push_back(thOrig); multiThOrig.push_back(thOrig);
 
-	Mat origReplicTh =  Mat::zeros(Size(1280,960), CV_8U);
+	Mat origReplicTh =  Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	merge(multiThOrig,origReplicTh);
 	masked = masked + origReplicTh;
 	
@@ -165,7 +178,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest){
 		if(areas.at(j)>MAX_AREA || areas.at(j)<MIN_AREA )
 			contours.erase(contours.begin()+j);
 	}
-
+	//contoursOfInterest = contours;
 	/*Calcolo Bounding Rectangle a partire dall'immagine con componenti connesse di interesse*/
 	 vector<Rect> boundRect( contours.size() );
 	 vector<vector<Point> > contours_poly( contours.size() );
@@ -176,11 +189,12 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest){
 		Scalar color(255);
 		approxPolyDP( Mat(contours[idx]), contours_poly[idx], 3, true );
 		boundRect[idx] = boundingRect( Mat(contours_poly[idx]) );
+		
 		minEnclosingCircle( (Mat)contours_poly[idx], center[idx], radius[idx] );
 	//	Rect tmpRect(center[idx].x-boundRect[idx].width/2,center[idx].y-boundRect[idx].height/2,boundRect[idx].width,boundRect[idx].height);
 		Rect tmpRect(center[idx].x-radius[idx],center[idx].y-radius[idx],radius[idx]*2,radius[idx]*2);
 		//Rect tmpRect = boundRect[idx];
-		Rect toPrint;
+		Rect toPrint; 
 		tmpRect += Size(tmpRect.width*RECT_AUGMENT ,tmpRect.height*RECT_AUGMENT);			  // Aumenta area di RECT_ARGUMENT
 		tmpRect -= Point((tmpRect.width*RECT_AUGMENT)/2 , (tmpRect.height*RECT_AUGMENT)/2 ); // Ricentra il rettangolo
 		
@@ -188,21 +202,27 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest){
 		if(tmpRect.x>0 && tmpRect.y>0 && tmpRect.x+tmpRect.width < morph.cols && tmpRect.y+tmpRect.height < morph.rows){ //Se il nuovo rettangolo allargato
 																													// NON esce fuori, accettalo
 			regionsOfInterest.push_back(img(tmpRect));
+			//blobsOfInterest.push_back(cont(tmpRect));
 			toPrint = tmpRect;
 		}
 		else{
 			toPrint = boundRect[idx];
 			regionsOfInterest.push_back(img(boundRect[idx]));
+			//blobsOfInterest.push_back(cont(boundRect[idx]));
 		}
-		rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
-		circle( cont, center[idx], (int)radius[idx], color, 2, 8, 0 );
+		area.push_back( contourArea(contours[idx]));
+		distance.push_back( HEIGH - computeCentroid(contours[idx]).y);
+		
+		/*rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
+		circle( cont, center[idx], (int)radius[idx], color, 2, 8, 0 );*/
 
 	}
 	//out = out+cont;
 	bitwise_xor(out,cont,out);
 	
 	/*namedWindow("out",WINDOW_NORMAL);
-	imshow("out",out);*/
+	imshow("out",out);
+	waitKey(0);*/
 }
 
 

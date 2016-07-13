@@ -8,13 +8,13 @@
  */
 
 #include <iostream>
-#include <iostream>
+#include <fstream>
 //#include "NaoUtils.h"
 #include "detection.h"
 #include "TheWalkingNao.h"
 
 #include "FeatExtract.h"
-#define FOLDER  "data_set_27_05/"
+#define FOLDER  "../training_set/imgNAO/"
 
 #define WRITE 0
 using namespace cv;
@@ -24,17 +24,20 @@ int main(int argc, char* argv[])
 {
 /*	Classiwekation weka ;
 	weka.ClassTest(); */
-#if 0
+#if 1 // Estrazione Oggetti di interesse
 	stringstream img_file;// = "data_set_27_05/123.jpg";
-	Mat image; vector<Mat> rectangles;
-	
-	for(int i=0;i<156;i++){
-		img_file<<FOLDER<<i<<".jpg";
+	stringstream data_file;
+	Mat image; vector<Mat> rectangles, blobs;
+	std::ofstream writer;
+	vector<double> area,distance;
+	for(int i=1;i<127;i++){
+		img_file<<FOLDER<<"im ("<<i<<").jpg";
+		
 		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
 		img_file.str(string());
 
-		if(image.rows < 960 ||image.cols <1280)
-			resize(image, image, Size(1280,960), 0, 0, INTER_LINEAR);
+		if(image.rows != HEIGH ||image.cols !=WIDTH)
+			resize(image, image, Size(WIDTH,HEIGH), 0, 0, INTER_LINEAR);
 	
 		if (!image.data) // Check for invalid input
 		{
@@ -42,14 +45,21 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 		rectangles.clear();
-		detect2(image,rectangles);
+		blobs.clear();
+		detect2(image,rectangles,area,distance);
 		
 		for(int j=0;j<rectangles.size();j++){
+			data_file<<FOLDER<<"detectionNoMorph/"<<"img"<<i<<"_"<<j<<".txt";
+			writer.open(data_file.str(),ios::out);
+			writer<<area[j]<<" "<<distance[j]<<endl;
 			img_file<<FOLDER<<"detectionNoMorph/"<<"img"<<i<<"_"<<j<<".jpg";
 			imwrite(img_file.str(),rectangles[j]);
-			img_file.str(string());
+			img_file.str("");
+			data_file.str("");
+			writer.clear();
+			writer.close();
 		}
-		image = Mat::zeros(Size(1280,960), CV_8U);
+		image = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	}
 
 	waitKey(0);
@@ -113,7 +123,7 @@ int main(int argc, char* argv[])
 	n.explore();
 	system("pause");
 #endif
-#if 1
+#if 0
 	TheWalkingNao twn;
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles; double angle=-1;
