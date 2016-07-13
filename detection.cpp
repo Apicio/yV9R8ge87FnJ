@@ -118,7 +118,7 @@ Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 }
 
 
-void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<double>& area,vector<double>& distance){
+void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blob){
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray;
 	Mat out = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
@@ -128,7 +128,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<double>& area,vector
 	Mat cont = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	Mat maskHSV = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	Mat noBackMask = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(9,9));
+	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
 	Mat thMasked; Mat thOrig; Mat bwOrig; Mat bwNoBackMask;
 	cout<<kernelEr<<endl;
 	Mat kernelOp = getStructuringElement(MORPH_ELLIPSE,Size(13,13));
@@ -136,6 +136,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<double>& area,vector
 	vector< vector<Point> > contours;
 	maskHSV		  = detectShadows(img);
 	noBackMask    = backgroundRemoval(img);
+	Blob b; b.originalImage=img;
 	/***************************************/
 	/*cvtColor(img,gray,CV_BGR2GRAY);
 	gray = (gray!=0);
@@ -202,21 +203,26 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<double>& area,vector
 		if(tmpRect.x>0 && tmpRect.y>0 && tmpRect.x+tmpRect.width < morph.cols && tmpRect.y+tmpRect.height < morph.rows){ //Se il nuovo rettangolo allargato
 																													// NON esce fuori, accettalo
 			regionsOfInterest.push_back(img(tmpRect));
-			//blobsOfInterest.push_back(cont(tmpRect));
+			b.cuttedImages.push_back(img(tmpRect));
+			b.blobsImage.push_back(cont(tmpRect));
 			toPrint = tmpRect;
 		}
 		else{
 			toPrint = boundRect[idx];
 			regionsOfInterest.push_back(img(boundRect[idx]));
-			//blobsOfInterest.push_back(cont(boundRect[idx]));
+			b.cuttedImages.push_back(img(boundRect[idx]));
+			b.blobsImage.push_back(cont(boundRect[idx]));
 		}
-		area.push_back( contourArea(contours[idx]));
-		distance.push_back( HEIGH - computeCentroid(contours[idx]).y);
+		Point centroid = computeCentroid(contours[idx]);
+		b.centroid.push_back(centroid);
+		b.area.push_back(contourArea(contours[idx]));
+		b.distance.push_back(HEIGH - centroid.y);
 		
 		/*rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
 		circle( cont, center[idx], (int)radius[idx], color, 2, 8, 0 );*/
 
 	}
+	blob.push_back(b);
 	//out = out+cont;
 	bitwise_xor(out,cont,out);
 	

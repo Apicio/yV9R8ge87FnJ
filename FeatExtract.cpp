@@ -73,7 +73,7 @@ double FeatExtract::computeEntropy(cv::Mat image){
 	int cnt = 0;
 	double entr = 0;
 	float total_size = image.rows * image.cols; //total size of all symbols in an image
-	cout<<histogram<<endl;
+	
 	for (int i = 0;i<histSize;i++)
 	{
 		 sym_occur = histogram.at<float>(i, 0); //the number of times a sybmol has occured
@@ -91,12 +91,18 @@ double FeatExtract::readBboxComparasion(cv::Mat image){
 	return rows/cols;
 }
 
+std::string FeatExtract::readAreaAndDistance(std::string path){
+	return NULL;
+}
+
 void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite, std::vector<string> types, bool toMask){
 	 DIR *pDIR;
 	 cv::Mat readed, img,mask;
 	 vector<Mat> bands;
 	 std::stringstream s1,s2;
 	 std::string currDir,currType;
+	 std::ifstream reader;
+	 char infos[100];
 	 writer.open(pathToWrite,ios::out);
      struct dirent *entry;
 	 for(int i=0;i<pathToDir.size();i++){
@@ -109,23 +115,34 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
               if( strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 ){
 				s1 <<currDir<< entry->d_name;
 				std::cout<<s1.str();
-				readed = cv::imread(s1.str());
-				if(toMask){
-					mask = backgroundRemoval(readed);
-					split(readed,bands);
-					readed = applyMaskBandByBand(mask,bands);
-				}
+				if(s1.str().find(".jpg")!=std::string::npos){
+					readed = cv::imread(s1.str());
+					if(toMask){
+						mask = backgroundRemoval(readed);
+						split(readed,bands);
+						readed = applyMaskBandByBand(mask,bands);
+					}
 
 				/*CALCOLO RAPPORTO FRA BBOX, NB: PRIMA DELLA RESIZE!!!*/
 			//	writer<<readBboxComparasion(readed)<<",";
 
-				cv::resize(readed,img,cv::Size(200,200),0,0,cv::INTER_LINEAR);
+					cv::resize(readed,img,cv::Size(200,200),0,0,cv::INTER_LINEAR);
 				/*if(i%10==0)
 					imshow(s1.str(),readed);*/
-				writer<<readMeanHueAndMoments(img);
-				writer<<readStdDevHue(img);
-				writer<<computeEntropy(img)<<",";
-				writer<<currType<<endl;
+					writer<<readMeanHueAndMoments(img);
+					writer<<readStdDevHue(img);
+					writer<<computeEntropy(img)<<",";
+					
+				}else{
+					reader.open(s1.str(),ios::in);
+					string tmp;
+					getline(reader,tmp);
+					writer<<tmp<<",";
+					writer<<currType<<endl;
+					reader.clear();
+					reader.close();
+				}
+				
 				
 				s1.str("");
 			  }

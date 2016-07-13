@@ -1,12 +1,13 @@
 #pragma once
 
 #include <iostream>
+
 #include "dirent.h"
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <fstream> 
 
-#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,entropy"
+#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,entropy,area,distance,"
 
 using namespace std;
 
@@ -35,6 +36,7 @@ public:
 	std::string readStdDevHue(cv::Mat image);
 	double computeEntropy(cv::Mat );
 	double readBboxComparasion(cv::Mat image);
+	std::string readAreaAndDistance(std::string path);
 	
 	
 };
