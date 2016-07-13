@@ -1,7 +1,8 @@
 #include "TheWalkingNao.h"
 #define NAO 0
 
-TheWalkingNao::TheWalkingNao(void)
+TheWalkingNao::TheWalkingNao(const char* robotIP)
+	: motion(robotIP), robotPosture(robotIP)
 {
 /* Configuration */
 	_ImageSharp = true;
@@ -196,4 +197,25 @@ double TheWalkingNao::fmax(double element[], int size){
 	return small;
 }
 
+void TheWalkingNow::standUp() {
+	/* required position before moving */
+	robotPosture.goToPosture("StandInit", 0.5f);
+}
+
+void TheWalkingNao::moveLeft(float meters) {
+	/* moves to the left, rotating torso 90 deg. counter-clockwise */
+	motion.moveTo(0f, -meters, 1.5709f);
+}
+
+void TheWalkingNao::moveRight(float meters) {
+	/* moves to the right, rotating torso 90 deg. clockwise */
+	motion.moveTo(0f, meters, -1.5709f);
+}
+
+void TheWalkingNao::moveForward(float meters) {
+	/* moves forward, without torso rotation */
+	motion.moveTo(meters, 0f, 0f);
+}
+
 TheWalkingNao::~TheWalkingNao(void){}
+
