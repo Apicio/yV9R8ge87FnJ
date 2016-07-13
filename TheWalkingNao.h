@@ -1,43 +1,35 @@
 #pragma once
-#include <stdio.h>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/opencv.hpp>
+#include "cvdrawingutils.h"
+#include "detection.h"
+#include "Constants.h"
 #include <string.h>
 #include <iostream>
-#include <vector>
+#include <limits.h>
 #include <fstream> 
-#include <math.h>
-
+#include <stdio.h>
 #include "aruco.h"
-#include "cvdrawingutils.h"
-#include <opencv2/opencv.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
-#define M_PI 3.14159265358979323846  /* pi */
+#include <vector>
+#include <math.h>
 
 using namespace cv;
 using namespace aruco;
 
-/*
-double fmin(double element[], int size){
-	double small = element[0];
-	for(int i=0; i<size; i++){
-		if (element[i] < small)
-			small = element[i];
-	}
-	return small;
-}
-double fmax(double element[], int size){
-	double small = element[0];
-	for(int i=0; i<size; i++){
-		if (element[i] > small)
-			small = element[i];
-	}
-	return small;
-}
-*/
 enum Direction {NORTH,SOUTH,WEST,OVEST, NORTHWEST,SOUTHWEST,SOUTHOVEST,NORDOVEST };
 class TheWalkingNao
 {
 private:
+	CameraParameters camParams;
+	bool _ImageSharp;
+	bool _invert;
+	double _SharpSigma;
+	double _SharpThreshold;
+	double _SharpAmount;
+	double _medianBlur;
+	double _markSize; /* m */
+
+
 	int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy);
 	double computeAngle(Marker m, CameraParameters cam);
 	double fmin(double element[], int size);
