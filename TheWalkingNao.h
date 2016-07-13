@@ -12,6 +12,8 @@
 #include "aruco.h"
 #include <vector>
 #include <math.h>
+#include <alproxies/almotionproxy.h>
+#include <alproxies/alrobotpostureproxy.h>
 
 using namespace cv;
 using namespace aruco;
@@ -29,13 +31,20 @@ private:
 	double _medianBlur;
 	double _markSize; /* m */
 
+	AL::ALMotionProxy motion;
+	AL::ALRobotPostureProxy robotPosture;
 
 	int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy);
 	double computeAngle(Marker m, CameraParameters cam);
 	double fmin(double element[], int size);
 	double fmax(double element[], int size);
 public:
-	TheWalkingNao(void);
+	TheWalkingNao(const char* robotIP);
 	void ArucoFind(Mat img, double& angle,bool toRemoveMarkers);
+	void standUp();
+	void moveLeft(float meters);
+	void moveRight(float meters);
+	void moveForward(float meters);
 	~TheWalkingNao(void);
 };
+
