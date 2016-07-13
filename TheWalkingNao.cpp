@@ -37,11 +37,12 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 		double beta = 1-alpha;
 		addWeighted(InImage, alpha, Sharp, beta, 0, Sharp); */
 		CameraParameters camParams(cameraMatrix, distorsionCoeff, resolution);		
-		MDetector.detect(Sharp,Markers,camParams,0.1,true);	
+		MDetector.detect(Sharp,Markers,camParams,0.15,false);	
 		cv::Mat croppedImage;
+		static int k = 0;
 		//for each marker, draw info and its boundaries in the image
 		for (unsigned int i=0;i<Markers.size();i++) {
-			
+			cout << endl << "N: " << k++ << endl;
 			cvtColor(Sharp,thresholded,CV_BGR2GRAY);
 			threshold(thresholded, thresholded,220,255,THRESH_BINARY);
 			Size s = thresholded.size();
@@ -90,9 +91,15 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 				cosa è da fare se e solo se abbiamo il problema del rilevamento fra più marker*/
 				if(Markers[i].id == 136)
 					angle = computeAngle(Markers[i],camParams);
+			
 					
 		}
-				cv::imshow("full",Sharp);
+		vector<std::vector<cv::Point2f> > cand = MDetector.getCandidates();
+		for(int i=0; i<cand.size(); i++){
+			MDetector.drawLine(Sharp,cand,i);
+		}
+		cv::imshow("full",Sharp);
+				
     }catch (std::exception &ex){cout<<"Exception :"<<ex.what()<<endl;}
 }
 

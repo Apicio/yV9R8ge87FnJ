@@ -245,7 +245,10 @@ public:
      * @return true if the operation succeed
      */
     bool warp(cv::Mat &in,cv::Mat &out,cv::Size size, std::vector<cv::Point2f> points)throw (cv::Exception);
-
+	static void sharpMark(cv::Mat in, vector<cv::Mat > &newCandidate, int x, int y, bool doTh);
+	static void setAll(cv::Mat &in, int Xstart, int Ystart, int swidth, int value);
+	static void rotate_90n(cv::Mat &src, cv::Mat &dst, int angle);
+	static void drawLine(cv::Mat &Image, cv::vector<cv::vector<cv::Point2f> > Points, int i);
 
 
     /** Refine MarkerCandidate Corner using LINES method
