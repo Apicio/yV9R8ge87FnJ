@@ -56,6 +56,8 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 					if(pnpoly(4,v1,v2,y,x))
 						thresholded.at<char>(x,y) = 255;
 				}
+				imshow("thresh",thresholded);
+				waitKey(0);
 			}
 			medianBlur(thresholded,thresholded,11);
 			findContours(thresholded, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
@@ -81,6 +83,7 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 			Markers[i].draw(Sharp,Scalar(0,0,255),2);
 			CvDrawingUtils u;
 			u.draw3dAxis(Sharp,Markers[i],camParams);
+			imshow("Sharp",Sharp);
 				//TODO:
 				/*Aruco rileva UN solo Marker per ID, è possibile che nella stessa scena vi siano
 				due marker, quindi l'idea è quella di utilizzare la posizione del centroide. Questa

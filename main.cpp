@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 	}
 	waitKey(0); // Wait for a keystroke in the window
 #endif
-#if 1
+#if 0
 	FeatExtract fe;
 	vector<string> dirs,types;
 /*	dirs.push_back("../detection/mela_rossa/");
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
 	n.explore();
 	system("pause");
 #endif
-#if 0
+#if 1
 	TheWalkingNao twn;
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles; double angle=-1;
