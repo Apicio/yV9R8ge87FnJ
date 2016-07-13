@@ -34,7 +34,7 @@ or implied, of Rafael Muñoz Salinas.
 #include <fstream>
 #include "arucofidmarkers.h"
 #include <valarray>
-#define SHARP 0
+#define SHARP 1
 #define SOGLIA 0.2
 using namespace std;
 using namespace cv;
@@ -130,14 +130,6 @@ void MarkerDetector::drawLine(cv::Mat &Image, vector<vector<Point2f> > Points, i
 	cv::line(Image,imagePoints[1],imagePoints[3],Scalar(0,255,255,255),2);
 }
 
-void MarkerDetector::setAll(Mat &in, int Xstart, int Ystart, int swidth, int value){
-	for(int i=Xstart; i<Xstart+swidth; i++){
-		for(int j=Ystart; j<Ystart+swidth; j++){
-			in.at<uchar>(j,i) = value;
-		}
-	}
-}
-
 void MarkerDetector::rotate_90n(cv::Mat &src, cv::Mat &dst, int angle)
 {
     dst.create(src.size(), src.type());
@@ -159,28 +151,23 @@ void MarkerDetector::rotate_90n(cv::Mat &src, cv::Mat &dst, int angle)
     }
 }
 
-void MarkerDetector::sharpMark(Mat input, vector<Mat > &out, int x, int y, bool doTh){
-	if(y>=7)
-		return;
-	Mat in;
-	input.copyTo(in);
 
+void MarkerDetector::sharpMark(Mat in, vector<Mat > &out, int x, int y, Mat computationMatrix){
+	if(y>=7)return;
+	if(countNonZero(in)>(0.5*in.rows*in.cols))return;
 	assert(in.rows==in.cols);
     cv::Mat grey;
-    if ( in.type()==CV_8UC1) 
-		grey=in;
-    else 
-		cv::cvtColor(in,grey,COLOR_BGR2GRAY); 
-	if(doTh)
-		threshold(grey, grey,125, 255, THRESH_BINARY|THRESH_OTSU);
-	if(countNonZero(grey)>(0.49*(grey.rows*grey.rows))){
-		return;
-	}
+    if ( in.type()==CV_8UC1) grey=in;
+    else cv::cvtColor(in,grey,COLOR_BGR2GRAY); 
+	if(y==0) threshold(grey, grey,125, 255, THRESH_BINARY|THRESH_OTSU);
 	double th = SOGLIA;
 	double swidth=grey.rows/7;
 
+	if(y==0){
+		imshow("abc",in);
+		waitKey(0);
+	}
 
-	// TODO USARE MATRICE DI BOOL
     for (;y<7;y++)
     {	
         for (;x<7;x++)
@@ -188,7 +175,7 @@ void MarkerDetector::sharpMark(Mat input, vector<Mat > &out, int x, int y, bool 
 			if(y==0 || x == 0 || y == 6 || x == 6){
 				int Xstart=(x)*(swidth);
 				int Ystart=(y)*(swidth);
-				setAll(grey,Xstart,Ystart,swidth,0);
+				computationMatrix.at<uchar>(y,x) = 0;
 			}else{
 
             int Xstart=(x)*(swidth);
@@ -196,22 +183,23 @@ void MarkerDetector::sharpMark(Mat input, vector<Mat > &out, int x, int y, bool 
             Mat square=grey(Rect(Xstart,Ystart,swidth,swidth));
             int numWhite = countNonZero(square);
 			if(numWhite< (th*(swidth*swidth)))
-				setAll(grey,Xstart,Ystart,swidth,0);
+				computationMatrix.at<uchar>(y,x) = 0;
 			else if(numWhite > ((1-th)*(swidth*swidth)))
-				setAll(grey,Xstart,Ystart,swidth,255);
+				computationMatrix.at<uchar>(y,x) = 255;
 			else{
-				setAll(grey,Xstart,Ystart,swidth,255);
-				sharpMark(grey, out,  x+1, y, false);
-				setAll(grey,Xstart,Ystart,swidth,0);
+				computationMatrix.at<uchar>(y,x) = 255;
+				Mat next;
+				computationMatrix.copyTo(next);
+				sharpMark(grey, out,  x+1, y,next);
+				computationMatrix.at<uchar>(y,x) = 0;
 				}
 			}
 		}
 		x= 0;
 	}
-	
-	static cv::Mat id136=cv::Mat::zeros(in.rows,in.cols,CV_8UC1);
-	static cv::Mat id787=cv::Mat::zeros(in.rows,in.cols,CV_8UC1);
 
+	static cv::Mat id136=cv::Mat::zeros(7,7,CV_8UC1);
+	static cv::Mat id787=cv::Mat::zeros(7,7,CV_8UC1);
 	for (int ii = 0;ii<7;ii++)
     {	
         for (int jj = 0;jj<7;jj++)
@@ -221,28 +209,29 @@ void MarkerDetector::sharpMark(Mat input, vector<Mat > &out, int x, int y, bool 
 			if(jj==1 && ii==1 || jj==1 && ii==3 || jj==1 && ii==5 ||
 		       jj==2 && ii==2 || jj==2 && ii==4 ||
 			   jj==5 && ii==2 || jj==5 && ii==4 )
-				setAll(id136,Xstart,Ystart,swidth,255);
+				id136.at<uchar>(ii,jj) = 255;
 			if(jj==1 && ii==2 || jj==1 && ii==3 || jj==1 && ii==4 ||
 		       jj==2 && ii==1 || jj==2 && ii==5 ||
 			   jj==3 && ii==1 || jj==3 && ii==3 || jj==3 && ii==5 || 
 			   jj==4 && ii==1 || jj==4 && ii==3 || jj==4 && ii==5 ||
 			   jj==5 && ii==3)
-				setAll(id787,Xstart,Ystart,swidth,255);	
+				id787.at<uchar>(ii,ii) = 255;
 		}
 	}
-	// resize(image, image, Size(1280,960), 0, 0, INTER_LINEAR)
 	cv::Mat r_id136, r_id787;
 	for (int i=0; i<4; i++){
 		rotate_90n(id136, r_id136, 90*i);
-		double s = cv::sum( grey-r_id136 )[0];
-		if(s >= 0 && s < 1000)
-			out.push_back(grey);
+		double s1 = cv::sum( computationMatrix-r_id136 )[0];
 		rotate_90n(id787, r_id787, 90*i);
-		s = cv::sum( grey-r_id787 )[0];
-		if(s >= 0 && s < 1000)
-			out.push_back(grey);
+		double s2 = cv::sum( computationMatrix-r_id787 )[0];
+		if(s1 ==0 || s2 ==0){
+			cv::Mat toRet=cv::Mat::zeros(grey.rows,grey.cols,CV_8UC1);
+			resize(computationMatrix, toRet, Size(grey.rows,grey.cols), 0, 0, INTER_NEAREST);
+			out.push_back(toRet);
+		}
 	}
 }
+
 
 void MarkerDetector::detect ( const  cv::Mat &input,vector<Marker> &detectedMarkers,Mat camMatrix ,Mat distCoeff ,float markerSizeMeters ,bool setYPerperdicular) throw ( cv::Exception )
 {
@@ -339,7 +328,7 @@ void MarkerDetector::detect ( const  cv::Mat &input,vector<Marker> &detectedMark
             else {
 #if SHARP
 					if(out.size() == 1)
-						sharpMark(canonicalMarker, out, 0, 0, true);
+						sharpMark(canonicalMarker, out, 0, 0);
 					if(idx !=0 && idx == out.size()-1)
 #endif
 						_candidates.push_back ( MarkerCanditates[i] );
