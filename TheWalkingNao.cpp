@@ -1,51 +1,69 @@
 #include "TheWalkingNao.h"
-#include "detection.h"
-#include <limits.h>
+#define NAO 0
 
 TheWalkingNao::TheWalkingNao(void)
 {
+/* Configuration */
+	_ImageSharp = true;
+	_SharpSigma = 10;
+	_SharpThreshold = 5;
+	_SharpAmount = 1;
+	_medianBlur = 11;
+	_markSize = 0.15;
+	_invert = true;
+/* Init */
+	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
+	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
+	cameraMatrix.at<float>(0,0)=558.570339530768;
+	cameraMatrix.at<float>(0,1)=0;
+	cameraMatrix.at<float>(0,2)=308.885375457296;
+	cameraMatrix.at<float>(1,0)=0;
+	cameraMatrix.at<float>(1,1)=556.122943034837;
+	cameraMatrix.at<float>(1,2)=247.600724811385;
+	cameraMatrix.at<float>(2,0)=0;
+	cameraMatrix.at<float>(2,1)=0;
+	cameraMatrix.at<float>(2,2)=1;
+	distorsionCoeff.at<float>(0,0)=-0.0648763971625288;
+	distorsionCoeff.at<float>(1,0)=0.0612520196884308;
+	distorsionCoeff.at<float>(2,0)=0.0038281538281731;
+	distorsionCoeff.at<float>(3,0)=-0.00551104078371959;
+	distorsionCoeff.at<float>(4,0)=0;
+	Size resolution(WIDTH,HEIGHT);
+	CameraParameters cam(cameraMatrix, distorsionCoeff, resolution);
+	camParams = cam;
 }
 
 void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
+	if(_invert){
+		Mat white(img.size(), img.type(), Scalar(255,255,255));
+		img = white - img;
+	}
     try{
+/* Declaration */
         MarkerDetector MDetector;
         vector<Marker> Markers;
-        cv::Mat Sharp, grayImage;
+        Mat grayImage, croppedImage;
 		Mat thresholded = Mat::zeros(img.size(),img.type());
 		Mat toReturn = img.clone();
 		vector< vector<Point> > contours;
-		Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
-		Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
-		cameraMatrix.at<float>(0,0)=558.570339530768;
-		cameraMatrix.at<float>(0,1)=0;
-		cameraMatrix.at<float>(0,2)=308.885375457296;
-		cameraMatrix.at<float>(1,0)=0;
-		cameraMatrix.at<float>(1,1)=556.122943034837;
-		cameraMatrix.at<float>(1,2)=247.600724811385;
-		cameraMatrix.at<float>(2,0)=0;
-		cameraMatrix.at<float>(2,1)=0;
-		cameraMatrix.at<float>(2,2)=1;
-		distorsionCoeff.at<float>(0,0)=-0.0648763971625288;
-        distorsionCoeff.at<float>(1,0)=0.0612520196884308;
-        distorsionCoeff.at<float>(2,0)=0.0038281538281731;
-        distorsionCoeff.at<float>(3,0)=-0.00551104078371959;
-		distorsionCoeff.at<float>(4,0)=0;
-		Size resolution(640,480);
-		img.copyTo(Sharp);
-/*		GaussianBlur(InImage, Sharp, Size_<int>(0,0), 10);
-		double alpha = 1;
-		double beta = 1-alpha;
-		addWeighted(InImage, alpha, Sharp, beta, 0, Sharp); */
-		CameraParameters camParams(cameraMatrix, distorsionCoeff, resolution);		
-		MDetector.detect(Sharp,Markers,camParams,0.15,false);	
-		cv::Mat croppedImage;
 		static int k = 0;
-		//for each marker, draw info and its boundaries in the image
+/* Marker Detect */
+		if(_ImageSharp){
+			Mat blurred; 
+			GaussianBlur(img, blurred, Size(), _SharpSigma, _SharpSigma);
+			Mat lowContrastMask = abs(img - blurred) < _SharpThreshold;
+			Mat sharpened = img*(1+_SharpAmount) + blurred*(-_SharpAmount);
+			img.copyTo(sharpened, lowContrastMask);
+			sharpened.copyTo(img);
+		}
+#if NAO
+			MDetector.detect(img,Markers,camParams,_markSize,false);	
+#else
+			MDetector.detect(img,Markers);	
+#endif
+/* for each marker, draw info and its boundaries in the image */
 		for (unsigned int i=0;i<Markers.size();i++) {
 			cout << endl << "N: " << k++ << endl;
-			cvtColor(Sharp,thresholded,CV_BGR2GRAY);
-			threshold(thresholded, thresholded,220,255,THRESH_BINARY);
-			Size s = thresholded.size();
 			double v1[] = {Markers[i].at(0).x, Markers[i].at(1).x, Markers[i].at(2).x, Markers[i].at(3).x};
 			double v2[] = {Markers[i].at(0).y, Markers[i].at(1).y, Markers[i].at(2).y, Markers[i].at(3).y};
 			double maxX = fmax(v1,4);
@@ -58,7 +76,11 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 						thresholded.at<char>(x,y) = 255;
 				}
 			}
-			medianBlur(thresholded,thresholded,11);
+#if NAO
+			cvtColor(img,thresholded,CV_BGR2GRAY);
+			threshold(thresholded, thresholded,220,255,THRESH_BINARY);
+			Size s = thresholded.size();
+			medianBlur(thresholded,thresholded,_medianBlur);
 			findContours(thresholded, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 			int minContour;
 			double distance = INT_MAX;
@@ -79,27 +101,51 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 			}
 			drawContours(toReturn,contours,minContour,Scalar(0,0,0),CV_FILLED);
 			
-			Markers[i].draw(Sharp,Scalar(0,0,255),2);
+			Markers[i].draw(img,Scalar(0,0,255),2);
 			CvDrawingUtils u;
-			u.draw3dAxis(Sharp,Markers[i],camParams);
+			u.draw3dAxis(img,Markers[i],camParams);
 				//TODO:
 				/*Aruco rileva UN solo Marker per ID, è possibile che nella stessa scena vi siano
 				due marker, quindi l'idea è quella di utilizzare la posizione del centroide. Questa
 				cosa è da fare se e solo se abbiamo il problema del rilevamento fra più marker*/
 				if(Markers[i].id == 136)
 					angle = computeAngle(Markers[i],camParams);
-			
-					
+#else
+			Markers[i].draw(img,Scalar(0,0,255),2);
+#endif					
 		}
+#if NAO
+		vector<std::vector<cv::Point2f> > candidates = MDetector.getCandidates();
+		for(unsigned int kk = candidates.size()-1; kk>=0 && Markers.size() !=0; kk--){
+			std::vector<cv::Point2f> candidate =  candidates.at(kk);
+			Point cent(0,0);
+			for(unsigned int ii = 0; ii<candidate.size(); ii++){
+				cent.x += candidate.at(ii).x;
+				cent.y += candidate.at(ii).y;
+			}
+
+			cent.x /=4;
+			cent.y /=4;
+			for(unsigned int i=0;i<Markers.size();i++){
+				if(cv::norm((Point)Markers[i].getCenter()-cent) < 10){
+					candidates.erase (candidates.begin()+kk);
+					break;
+				}
+			}
+		} 
+		for(int i=0; i<candidates.size(); i++){
+			MDetector.drawLine(img,candidates,i);
+		}
+
 		vector<std::vector<cv::Point2f> > cand = MDetector.getCandidates();
 		for(int i=0; i<cand.size(); i++){
-			MDetector.drawLine(Sharp,cand,i);
+			MDetector.drawLine(img,cand,i);
 		}
-		cv::imshow("full",Sharp);
+#endif
+		cv::imshow("full",img);
 				
     }catch (std::exception &ex){cout<<"Exception :"<<ex.what()<<endl;}
 }
-
 int TheWalkingNao::pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
 {
   int i, j, c = 0;

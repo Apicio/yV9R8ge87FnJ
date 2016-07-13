@@ -117,8 +117,8 @@ int main(int argc, char* argv[])
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles; double angle=-1;
 	Mat sharp;
-	for(int i=1;i<20;i++){
-		img_file<<"Markers\\arrow4\\im("<<i<<").jpg";
+	for(int i=1;i<64;i++){
+		img_file<<"Markers\\invert\\im ("<<i<<").jpg";
 		cout<<img_file.str()<<endl;
 		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
 		img_file.str(string());
@@ -131,5 +131,33 @@ int main(int argc, char* argv[])
 		waitKey(0);
 		
 	}
+
+/*
+whilte non siamo a fine percorso
+leggi immagine della camera
+
+if nao non è seduto
+	ottieni informazioni di percorso usando aruco
+
+if marker
+	muoviti verso il marker in modo da starci completamente sopra così che non copaia nella camera
+else
+	continua con l'ultima direzione valida
+
+if marker di direzione
+	esplra in accordo alla direzione
+
+if marker di stop
+	siediti sul marker, nao si siede rivolto nella direzione di marcia
+
+if nao è fermo
+	esplora ruotando la testa
+	rileva oggetto
+	pronuncia nome oggetto
+
+if rilevato o time out
+	allinea la testa nella direzione di marcia
+	alzati
+*/
 
 }

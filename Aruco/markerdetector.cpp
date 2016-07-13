@@ -50,6 +50,9 @@ namespace aruco
 MarkerDetector::MarkerDetector()
 {
     _doErosion=false;
+	_doClose = true;
+	_sizeCloseX = 2;
+	_sizeCloseY = 2;
     _enableCylinderWarp=false;
     _thresMethod=ADPT_THRES;
     _thresParam1=_thresParam2=7;
@@ -162,11 +165,6 @@ void MarkerDetector::sharpMark(Mat in, vector<Mat > &out, int x, int y, Mat comp
 	if(y==0) threshold(grey, grey,125, 255, THRESH_BINARY|THRESH_OTSU);
 	double th = SOGLIA;
 	double swidth=grey.rows/7;
-
-	if(y==0){
-		imshow("abc",in);
-		waitKey(0);
-	}
 
     for (;y<7;y++)
     {	
@@ -329,7 +327,7 @@ void MarkerDetector::detect ( const  cv::Mat &input,vector<Marker> &detectedMark
 #if SHARP
 					if(out.size() == 1)
 						sharpMark(canonicalMarker, out, 0, 0);
-					if(idx !=0 && idx == out.size()-1)
+					if(idx == out.size()-1)
 #endif
 						_candidates.push_back ( MarkerCanditates[i] );
 				}
@@ -399,8 +397,17 @@ void  MarkerDetector::detectRectangles ( const cv::Mat &thres,vector<std::vector
         MarkerCanditates[i]=candidates[i];
 }
 
-void MarkerDetector::detectRectangles(const cv::Mat &thresImg,vector<MarkerCandidate> & OutMarkerCanditates)
+void MarkerDetector::detectRectangles(const cv::Mat &thresImgIN,vector<MarkerCandidate> & OutMarkerCanditates)
 {
+	Mat thresImg;
+	thresImgIN.copyTo(thresImg);
+	if(_doClose){
+		Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(_sizeCloseX,_sizeCloseY));
+		dilate(thresImg,thresImg,kernelEr);
+		erode(thresImg,thresImg,kernelEr);
+	}
+
+
     vector<MarkerCandidate>  MarkerCanditates;
     //calcualte the min_max contour sizes
     int minSize=_minSize*std::max(thresImg.cols,thresImg.rows)*4;

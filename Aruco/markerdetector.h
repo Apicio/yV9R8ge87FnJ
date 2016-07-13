@@ -272,7 +272,9 @@ public:
     static void glGetProjectionMatrix( CameraParameters &  CamMatrix,cv::Size orgImgSize, cv::Size size,double proj_matrix[16],double gnear,double gfar,bool invert=false   )throw(cv::Exception);
 
 private:
-
+	bool _doClose;
+	int _sizeCloseX;
+	int _sizeCloseY;
     bool _enableCylinderWarp;
     bool warp_cylinder ( cv::Mat &in,cv::Mat &out,cv::Size size, MarkerCandidate& mc ) throw ( cv::Exception );
     /**
