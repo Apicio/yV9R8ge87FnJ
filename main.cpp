@@ -8,13 +8,14 @@
  */
 
 #include <iostream>
-#include <iostream>
+#include <fstream>
 //#include "NaoUtils.h"
 #include "detection.h"
 #include "TheWalkingNao.h"
 #include "Classiwekation.h"
+#include "Constants.h"
 #include "FeatExtract.h"
-#define FOLDER  "data_set_27_05/"
+#define FOLDER  "../training_set/imgNAO/"
 
 #define WRITE 0
 using namespace cv;
@@ -25,18 +26,20 @@ int main(int argc, char* argv[])
 	Classiwekation weka ;
 	double result = weka.classify("0.084635, 0.0039272,6.67428e-007,3.35296e-009,6.5209e-009,3.02723e-017,1.73733e-013,-3.64799e-018,62.0308,4.17424,12081,798");
 	cout << "PI =" << result << endl;
-
-#if 0
+#if 0 // Estrazione Oggetti di interesse
 	stringstream img_file;// = "data_set_27_05/123.jpg";
-	Mat image; vector<Mat> rectangles;
+	stringstream data_file;
+	Mat image; vector<Blob> blobs; vector<Mat> rectangles;
+	std::ofstream writer;
 	
-	for(int i=0;i<156;i++){
-		img_file<<FOLDER<<i<<".jpg";
+	for(int i=1;i<127;i++){
+		img_file<<FOLDER<<"im ("<<i<<").jpg";
+		
 		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
 		img_file.str(string());
 
-		if(image.rows < 960 ||image.cols <1280)
-			resize(image, image, Size(1280,960), 0, 0, INTER_LINEAR);
+		if(image.rows != HEIGH ||image.cols !=WIDTH)
+			resize(image, image, Size(WIDTH,HEIGH), 0, 0, INTER_NEAREST);
 	
 		if (!image.data) // Check for invalid input
 		{
@@ -44,14 +47,20 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 		rectangles.clear();
-		detect2(image,rectangles);
+		detect2(image,rectangles,blobs);
 		
 		for(int j=0;j<rectangles.size();j++){
+			data_file<<FOLDER<<"detectionNoMorph/"<<"img"<<i<<"_"<<j<<".txt";
+			writer.open(data_file.str(),ios::out);
+			writer<<blobs[i-1].area[j]<<","<<blobs[i-1].distance[j]<<endl; //NON DIMENTICARE: i-1 perché le immagini partono da 1
 			img_file<<FOLDER<<"detectionNoMorph/"<<"img"<<i<<"_"<<j<<".jpg";
 			imwrite(img_file.str(),rectangles[j]);
-			img_file.str(string());
+			img_file.str("");
+			data_file.str("");
+			writer.clear();
+			writer.close();
 		}
-		image = Mat::zeros(Size(1280,960), CV_8U);
+		image = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	}
 
 	waitKey(0);
@@ -80,7 +89,7 @@ int main(int argc, char* argv[])
 	}
 	waitKey(0); // Wait for a keystroke in the window
 #endif
-#if 0
+#if 1
 	FeatExtract fe;
 	vector<string> dirs,types;
 /*	dirs.push_back("../detection/mela_rossa/");
@@ -94,27 +103,27 @@ int main(int argc, char* argv[])
 
 	fe.extract(dirs,"featWeka.csv",types,false);
 	*/
-	dirs.push_back("../detectionNoMorph/mela_rossa/");
+	dirs.push_back("detectionNoMorph/mela_rossa/");
 	types.push_back("mela_rossa");
-	dirs.push_back("../detectionNoMorph/mela_gialla/");
+	dirs.push_back("detectionNoMorph/mela_gialla/");
 	types.push_back("mela_gialla");
-	dirs.push_back("../detectionNoMorph/bicchiere/");
+	dirs.push_back("detectionNoMorph/bicchiere/");
 	types.push_back("bicchiere");
-	dirs.push_back("../detectionNoMorph/tazzina/");
+	dirs.push_back("detectionNoMorph/tazzina/");
 	types.push_back("tazzina");
 
-	fe.extract(dirs,"featWekaNoMorph.csv",types,true);
+	fe.extract(dirs,"featWekaNoMorphNEW.csv",types,true);
 	
 	waitKey(0);
 	system("pause");
 
 #endif
-
 #if 0
 	NaoUtils n;
 	n.explore();
 	system("pause");
-
+#endif
+#if 0
 	TheWalkingNao twn;
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles; double angle=-1;
@@ -133,7 +142,7 @@ int main(int argc, char* argv[])
 		waitKey(0);
 	
 	}
-#endif	
+#endif
 /*
 whilte non siamo a fine percorso
 leggi immagine della camera

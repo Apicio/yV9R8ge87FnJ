@@ -1,16 +1,24 @@
 #pragma once
 
 #include <iostream>
+
 #include "dirent.h"
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <fstream> 
-#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,"
+
+#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,entropy,area,distance,"
 
 using namespace std;
 
+
+
 class FeatExtract
 {
+	
+private:
+	double Log2( double n ) ;
+	cv::Mat histogram(cv::Mat);
 public:
 	std::ofstream writer;
 	FeatExtract(void);
@@ -25,6 +33,11 @@ public:
 	void extract(std::vector<string> pathToDir, std::string pathToFile, std::vector<string> types,bool toMask);
 	std::string FeatExtract::extractDuringMovement(cv::Mat img,  bool toMask);
 	std::string readMeanHueAndMoments(cv::Mat image);
+	std::string readStdDevHue(cv::Mat image);
+	double computeEntropy(cv::Mat );
+	double readBboxComparasion(cv::Mat image);
+	std::string readAreaAndDistance(std::string path);
+	
 	
 };
 
