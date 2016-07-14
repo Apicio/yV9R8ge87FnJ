@@ -18,7 +18,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-#define NAOIP "169.254.28.227"
+#define NAOIP "192.168.88.202"
 #define NAOPORT 9559
 #define SAVEPATH "C:\\imgCatt\\"
 using namespace AL;
@@ -30,6 +30,7 @@ public:
 	~NaoUtils(void);
 	void explore();
 	void writeImages(const std::string& naoIP, const std::string& path);
+	void takeSomePhotos(std::string path);
 
 };
 
