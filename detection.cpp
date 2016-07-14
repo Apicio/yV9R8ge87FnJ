@@ -8,7 +8,6 @@ vector<double> computeArea(vector<vector<Point> > contours){
 		vector<Point> row = contours.at(i);
 		double area = contourArea(row);
 		toret.push_back(area);
-
 	}
 	return toret;
 }

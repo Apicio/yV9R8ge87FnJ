@@ -12,7 +12,7 @@
 //#include "NaoUtils.h"
 #include "detection.h"
 #include "TheWalkingNao.h"
-
+#include "Classiwekation.h"
 #include "FeatExtract.h"
 #define FOLDER  "data_set_27_05/"
 
@@ -22,8 +22,10 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-/*	Classiwekation weka ;
-	weka.ClassTest(); */
+	Classiwekation weka ;
+	double result = weka.classify("0.084635, 0.0039272,6.67428e-007,3.35296e-009,6.5209e-009,3.02723e-017,1.73733e-013,-3.64799e-018,62.0308,4.17424,12081,798");
+	cout << "PI =" << result << endl;
+
 #if 0
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles;
@@ -112,7 +114,7 @@ int main(int argc, char* argv[])
 	NaoUtils n;
 	n.explore();
 	system("pause");
-#endif
+
 	TheWalkingNao twn;
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles; double angle=-1;
@@ -129,9 +131,9 @@ int main(int argc, char* argv[])
 		cout<<"Angolo" <<angle<<endl;
 		imshow("img",image);
 		waitKey(0);
-		
+	
 	}
-
+#endif	
 /*
 whilte non siamo a fine percorso
 leggi immagine della camera
@@ -159,5 +161,5 @@ if rilevato o time out
 	allinea la testa nella direzione di marcia
 	alzati
 */
-
+	system("pause");
 }

@@ -1,6 +1,6 @@
 public class HelloWorld 
 {
-      public static void main(String args[]) 
+	  public static void main(String args[]) 
       {
          System.out.println("Hello World!");
          System.out.println("This is the main function in HelloWorld class");
@@ -9,6 +9,7 @@ public class HelloWorld
       {
       	System.out.println(szArg);      
       }
+	  
       public static int DisplayStruct(ControlDetail ctrlDetail)
       {
       	System.out.println("Structure is:\n-------------------------");

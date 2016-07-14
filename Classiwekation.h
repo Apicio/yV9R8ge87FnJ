@@ -2,10 +2,14 @@
 #include <stdio.h>
 #include <jni.h>
 #include <string.h>
+#include <stdio.h>
+#include <iostream>
+#define MODEL "MP_99.7.model"
+using namespace std;
 
 #define PATH_SEPARATOR ';' /* define it to be ':' on Solaris */
 #define USER_CLASSPATH "." /* where Prog.class is */
-#define OPTION_STRING "-Djava.class.path=\\JavaSrc\\TestStruct;\\JavaSrc\\TestStruct\\weka.jar"
+#define OPTION_STRING "-Djava.class.path=C:\\Users\\leo\\Desktop\\NaoVision\\JavaSrc\\TestStruct;C:\\Users\\leo\\Desktop\\NaoVision\\JavaSrc\\TestStruct\\weka.jar"
 
 struct ControlDetail
 {
@@ -28,12 +32,16 @@ struct WorkOrder
 
 class Classiwekation
 {
-public:
+private:
+	jclass clsWeka;
+	jmethodID runClassification;
+	jobject WekaObj;
 	JNIEnv *env;
 	JavaVM * jvm;
-
+public:
 	Classiwekation(void);
 	void ClassTest(void);
+	double classify(string features);
 	~Classiwekation(void);
 };
 

@@ -11,10 +11,28 @@ Classiwekation::Classiwekation(void)
     vm_args.nOptions = 1;
     vm_args.options = options;
     vm_args.ignoreUnrecognized = false;
-    
+
     int ret = JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args);
     if(ret < 0)
     	printf("\nUnable to Launch JVM\n");
+
+	clsWeka = env->FindClass("Weka"); // Read Weka.class
+	runClassification = env->GetMethodID(clsWeka,"runClassification","(Ljava/lang/String;)D");
+	jmethodID clsWekaConst = env->GetMethodID(clsWeka, "<init>", "(Ljava/lang/String;)V");
+	jstring StringArg = env->NewStringUTF(MODEL);
+	WekaObj = env->NewObject(clsWeka, clsWekaConst, StringArg);
+}
+
+double Classiwekation::classify(string features){	
+	jstring StringArg = env->NewStringUTF(features.c_str());
+	double jobjRetData = env->CallDoubleMethod(WekaObj,runClassification,StringArg);
+	jthrowable exc = env->ExceptionOccurred();
+    if (exc) {
+        jclass newExcCls;
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+    }
+	return jobjRetData;
 }
 
 void Classiwekation::ClassTest(void){

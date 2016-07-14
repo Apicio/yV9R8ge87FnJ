@@ -7,7 +7,7 @@ TheWalkingNao::TheWalkingNao(void)
 	_ImageSharp = true;
 	_SharpSigma = 10;
 	_SharpThreshold = 5;
-	_SharpAmount = 1;
+	_SharpAmount = 3;
 	_medianBlur = 11;
 	_markSize = 0.15;
 	_invert = true;
@@ -141,9 +141,7 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 		for(int i=0; i<cand.size(); i++){
 			MDetector.drawLine(img,cand,i);
 		}
-#endif
-		cv::imshow("full",img);
-				
+#endif	
     }catch (std::exception &ex){cout<<"Exception :"<<ex.what()<<endl;}
 }
 int TheWalkingNao::pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
