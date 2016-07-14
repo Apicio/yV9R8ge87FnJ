@@ -195,7 +195,7 @@ double TheWalkingNao::fmax(double element[], int size){
 	return small;
 }
 
-void TheWalkingNow::standUp() {
+void TheWalkingNao::standUp() {
 	/* required position before moving */
  	robotPosture.goToPosture("StandInit", 0.5f);
  }
