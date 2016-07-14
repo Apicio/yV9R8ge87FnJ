@@ -1,9 +1,7 @@
 #include "TheWalkingNao.h"
 #define NAO 0
 
-TheWalkingNao::TheWalkingNao(const char* robotIP)
-	: motion(robotIP), robotPosture(robotIP)
-{
+TheWalkingNao::TheWalkingNao(){
 /* Configuration */
 	_ImageSharp = true;
 	_SharpSigma = 10;
@@ -194,32 +192,35 @@ double TheWalkingNao::fmax(double element[], int size){
 	}
 	return _small;
 }
-
+void TheWalkingNao::init(const char* robotIP){
+	this->motion = new AL::ALMotionProxy(robotIP,PORT); 
+	this->robotPosture = new AL::ALRobotPostureProxy(robotIP,PORT);
+}
 void TheWalkingNao::standUp() {
 	/* required position before moving */
- 	robotPosture.goToPosture("StandInit", 0.1);
+ 	robotPosture->goToPosture("StandInit", 0.1);
  }
  
  void TheWalkingNao::moveLeft(float meters) {
  	/* moves to the left, rotating torso 90 deg. counter-clockwise */
-	motion.moveTo(0,0,1.5709);
- 	motion.moveTo(meters, 0, 0);
+	motion->moveTo(0,0,1.5709);
+ 	motion->moveTo(meters, 0, 0);
  }
  
  void TheWalkingNao::moveRight(float meters) {
  	/* moves to the right, rotating torso 90 deg. clockwise */
-	motion.moveTo(0, 0, -1.5709);
- 	motion.moveTo(meters, 0, 0);
+	motion->moveTo(0, 0, -1.5709);
+ 	motion->moveTo(meters, 0, 0);
  }
  
  void TheWalkingNao::moveForward(float meters) {
  	/* moves forward, without torso rotation */
- 	motion.moveTo(meters, 0, 0);
+ 	motion->moveTo(meters, 0, 0);
  }
 
   void TheWalkingNao::restNow() {
  	/* moves forward, without torso rotation */
- 	motion.rest();
+ 	motion->rest();
  }
 
 TheWalkingNao::~TheWalkingNao(void){}
