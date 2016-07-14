@@ -179,40 +179,40 @@ double TheWalkingNao::computeAngle(Marker m, CameraParameters cam){
 }
 
 double TheWalkingNao::fmin(double element[], int size){
-	double small = element[0];
+	double _small = INT_MAX;
 	for(int i=0; i<size; i++){
-		if (element[i] < small)
-			small = element[i];
+		if (element[i] < _small)
+			_small = element[i];
 	}
-	return small;
+	return _small;
 }
 double TheWalkingNao::fmax(double element[], int size){
-	double small = element[0];
+	double _small = element[0];
 	for(int i=0; i<size; i++){
-		if (element[i] > small)
-			small = element[i];
+		if (element[i] > _small)
+			_small = element[i];
 	}
-	return small;
+	return _small;
 }
 
 void TheWalkingNao::standUp() {
 	/* required position before moving */
- 	robotPosture.goToPosture("StandInit", 0.5f);
+ 	robotPosture.goToPosture("StandInit", 0.5);
  }
  
  void TheWalkingNao::moveLeft(float meters) {
  	/* moves to the left, rotating torso 90 deg. counter-clockwise */
- 	motion.moveTo(0f, -meters, 1.5709f);
+ 	motion.moveTo(0, -meters, 1.5709);
  }
  
  void TheWalkingNao::moveRight(float meters) {
  	/* moves to the right, rotating torso 90 deg. clockwise */
- 	motion.moveTo(0f, meters, -1.5709f);
+ 	motion.moveTo(0, meters, -1.5709);
  }
  
  void TheWalkingNao::moveForward(float meters) {
  	/* moves forward, without torso rotation */
- 	motion.moveTo(meters, 0f, 0f);
+ 	motion.moveTo(meters, 0, 0);
  }
 
 TheWalkingNao::~TheWalkingNao(void){}
