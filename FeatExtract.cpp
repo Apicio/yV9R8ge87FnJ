@@ -126,7 +126,7 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
 				/*CALCOLO RAPPORTO FRA BBOX, NB: PRIMA DELLA RESIZE!!!*/
 			//	writer<<readBboxComparasion(readed)<<",";
 
-					cv::resize(readed,img,cv::Size(200,200),0,0,cv::INTER_LINEAR);
+					cv::resize(readed,img,cv::Size(200,200),0,0,cv::INTER_NEAREST); //NB: INTER_NEAREST o INTER_LINEAR
 				/*if(i%10==0)
 					imshow(s1.str(),readed);*/
 					writer<<readMeanHueAndMoments(img);
