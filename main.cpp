@@ -11,7 +11,7 @@
 #include <fstream>
 #include "NaoUtils.h"
 #include "detection.h"
-//#include "TheWalkingNao.h"
+#include "TheWalkingNao.h"
 //#include "Classiwekation.h"
 #include "Constants.h"
 #include "FeatExtract.h"
@@ -23,14 +23,22 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	NaoUtils nu;
-	//nu.takeSomePhotos("../naoImgUp/");
-	nu.explore();
+	char* ip = "192.168.88.202";
+/*	TheWalkingNao twn(ip);
+	twn.standUp();
+	twn.moveLeft(.5);
+	twn.restNow();
+	twn.standUp();
+	twn.moveRight(.5);
+	twn.restNow();
+	/*NaoUtils nu;
+	nu.takeSomePhotos("../naoImgDist/");*/
+	//nu.explore();*/
 	/*
 	Classiwekation weka ;
 	double result = weka.classify("0.084635, 0.0039272,6.67428e-007,3.35296e-009,6.5209e-009,3.02723e-017,1.73733e-013,-3.64799e-018,62.0308,4.17424,12081,798");
 	cout << "PI =" << result << endl;*/
-#if 0 // Estrazione Oggetti di interesse
+#if 1 // Estrazione Oggetti di interesse
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	stringstream data_file;
 	Mat image; vector<Blob> blobs; vector<Mat> rectangles;

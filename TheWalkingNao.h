@@ -45,6 +45,7 @@ public:
 	void moveLeft(float meters);
 	void moveRight(float meters);
 	void moveForward(float meters);
+	void restNow();
 	~TheWalkingNao(void);
 };
 

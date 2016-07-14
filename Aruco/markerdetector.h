@@ -245,8 +245,7 @@ public:
      * @return true if the operation succeed
      */
     bool warp(cv::Mat &in,cv::Mat &out,cv::Size size, std::vector<cv::Point2f> points)throw (cv::Exception);
-	static void sharpMark(cv::Mat in, vector<cv::Mat > &newCandidate, int x, int y, bool doTh);
-	static void setAll(cv::Mat &in, int Xstart, int Ystart, int swidth, int value);
+	static void sharpMark(cv::Mat in, vector<cv::Mat > &newCandidate, int x, int y, cv::Mat computationMatrix=cv::Mat::zeros(7,7,CV_8UC1));
 	static void rotate_90n(cv::Mat &src, cv::Mat &dst, int angle);
 	static void drawLine(cv::Mat &Image, cv::vector<cv::vector<cv::Point2f> > Points, int i);
 
@@ -273,7 +272,9 @@ public:
     static void glGetProjectionMatrix( CameraParameters &  CamMatrix,cv::Size orgImgSize, cv::Size size,double proj_matrix[16],double gnear,double gfar,bool invert=false   )throw(cv::Exception);
 
 private:
-
+	bool _doClose;
+	int _sizeCloseX;
+	int _sizeCloseY;
     bool _enableCylinderWarp;
     bool warp_cylinder ( cv::Mat &in,cv::Mat &out,cv::Size size, MarkerCandidate& mc ) throw ( cv::Exception );
     /**
