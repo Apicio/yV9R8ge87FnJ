@@ -1,5 +1,5 @@
 #include "TheWalkingNao.h"
-#define NAO 0
+#define NAO 1
 
 TheWalkingNao::TheWalkingNao(){
 /* Configuration */
@@ -13,6 +13,21 @@ TheWalkingNao::TheWalkingNao(){
 /* Init */
 	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
 	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
+		cameraMatrix.at<float>(0,0)=1406.9968064577436;
+	cameraMatrix.at<float>(0,1)=0;
+	cameraMatrix.at<float>(0,2)=639.5;
+	cameraMatrix.at<float>(1,0)=0;
+	cameraMatrix.at<float>(1,1)=1406.9968064577436;
+	cameraMatrix.at<float>(1,2)=479.5;
+	cameraMatrix.at<float>(2,0)=0;
+	cameraMatrix.at<float>(2,1)=0;
+	cameraMatrix.at<float>(2,2)=1;
+	distorsionCoeff.at<float>(0,0)=-0.48289968517339044;;
+	distorsionCoeff.at<float>(1,0)=0.88748438503520599;
+	distorsionCoeff.at<float>(2,0)=0;
+	distorsionCoeff.at<float>(3,0)=0;
+	distorsionCoeff.at<float>(4,0)=0.33637972422994983;
+	/*
 	cameraMatrix.at<float>(0,0)=558.570339530768;
 	cameraMatrix.at<float>(0,1)=0;
 	cameraMatrix.at<float>(0,2)=308.885375457296;
@@ -26,7 +41,7 @@ TheWalkingNao::TheWalkingNao(){
 	distorsionCoeff.at<float>(1,0)=0.0612520196884308;
 	distorsionCoeff.at<float>(2,0)=0.0038281538281731;
 	distorsionCoeff.at<float>(3,0)=-0.00551104078371959;
-	distorsionCoeff.at<float>(4,0)=0;
+	distorsionCoeff.at<float>(4,0)=0;*/
 	Size resolution(WIDTH,HEIGHT);
 	CameraParameters cam(cameraMatrix, distorsionCoeff, resolution);
 	camParams = cam;
@@ -107,7 +122,7 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 				/*Aruco rileva UN solo Marker per ID, è possibile che nella stessa scena vi siano
 				due marker, quindi l'idea è quella di utilizzare la posizione del centroide. Questa
 				cosa è da fare se e solo se abbiamo il problema del rilevamento fra più marker*/
-				if(Markers[i].id == 136)
+				//if(Markers[i].id == 136)
 					angle = computeAngle(Markers[i],camParams);
 #else
 			Markers[i].draw(img,Scalar(0,0,255),2);
