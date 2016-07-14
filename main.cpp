@@ -11,7 +11,7 @@
 #include <fstream>
 //#include "NaoUtils.h"
 #include "detection.h"
-#include "TheWalkingNao.h"
+//#include "TheWalkingNao.h"
 #include "Classiwekation.h"
 #include "Constants.h"
 #include "FeatExtract.h"
