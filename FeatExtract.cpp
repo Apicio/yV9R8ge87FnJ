@@ -38,29 +38,28 @@ std::string FeatExtract::readStdDevHue(cv::Mat image){
 	return s.str();
 }
 
-std::string FeatExtract::extractDuringMovement(cv::Mat img,  bool toMask){
-	 DIR *pDIR;
-	 cv::Mat readed, mask;
+/*NB:USARE QUESTA DURANTE LA MOVIMENTAZIONE
+L'idea è che la detection ritorna la struttura Blob popolata con tutte le informazioni utili all'estrazione delle features. Ovviamente
+noi dobbiamo estrarre le features da ogni singolo oggetto che abbiamo estratto, quindi currIdx serve per selezionare l'iesimo oggetto.
+*/
+std::string FeatExtract::extractDuringMovement(Blob b, int currIdx, bool toMask){
+	cv::Mat img = b.originalImage.clone();
+	 cv::Mat mask;
 	 vector<Mat> bands;
-	 std::stringstream s1,s2;
-	 std::string currDir,currType;
+	 std::stringstream s1;
 	 if(toMask){
-	   mask = backgroundRemoval(readed);
-	   split(readed,bands);
-	   readed = applyMaskBandByBand(mask,bands);
+	   mask = backgroundRemoval(img);
+	   split(img,bands);
+	   img = applyMaskBandByBand(mask,bands);
 	 }
-	cv::resize(readed,img,cv::Size(200,200),0,0,cv::INTER_LINEAR);
+	cv::resize(img,img,cv::Size(200,200),0,0,cv::INTER_LINEAR);
 				/*if(i%10==0)
 					imshow(s1.str(),readed);*/
 	s1<<readMeanHueAndMoments(img);
+	s1<<readStdDevHue(img);
+	s1<<computeEntropy(img)<<",";
+	s1<<b.area[currIdx]<<","<<b.distance[currIdx]<<",";
 	return s1.str();
-}
-
-Mat FeatExtract::histogram(cv::Mat img){
-	Mat histogram;   int histSize = 256; // # di bin.
-    float range[] ={0,255}; const float *ranges[] = {range};
-    calcHist(&img, 1,0, Mat(), histogram,1, &histSize,ranges,true,false);
-	return histogram;
 }
 
 double FeatExtract::computeEntropy(cv::Mat image){
@@ -85,15 +84,12 @@ double FeatExtract::computeEntropy(cv::Mat image){
 	return entr;
 }
 
-double FeatExtract::readBboxComparasion(cv::Mat image){
+/*double FeatExtract::readBboxComparasion(cv::Mat image){
 	double rows = image.rows;
 	double cols = image.cols;
 	return rows/cols;
-}
+}*/
 
-std::string FeatExtract::readAreaAndDistance(std::string path){
-	return NULL;
-}
 
 void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite, std::vector<string> types, bool toMask){
 	 DIR *pDIR;

@@ -105,7 +105,7 @@ Mat backgroundRemoval(Mat& img){
 	return maskTOT;
 
 }
-//29 85 94 95 96 97
+
 Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 	Mat toReturn;
 	Mat newBands[3];
@@ -143,33 +143,29 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blob){
 	/*Rimozione Ombre e Background*/
 //	masked = applyMaskBandByBand(maskHSV,BGRbands); split(masked,BGRbands);
 	
+	/*Rimozione sfondo e sogliatura per videnziare esclusivamente ciò che è bianco*/
 	masked = applyMaskBandByBand(noBackMask,BGRbands);
 	cvtColor(masked,bwNoBackMask,CV_BGR2GRAY);
 	cvtColor(img,bwOrig,CV_BGR2GRAY);
 	threshold(bwOrig,thOrig,160,255,THRESH_BINARY);
 	threshold(bwNoBackMask,thMasked,160,255,THRESH_BINARY);
 
-	thOrig = thOrig - thMasked;
+	thOrig = thOrig - thMasked; //Stiamo estraendo tutto il bianco dall'immagine originale che è stato perso nella mascheratura
 	vector<Mat> multiThOrig; multiThOrig.push_back(thOrig); multiThOrig.push_back(thOrig); multiThOrig.push_back(thOrig);
-
 	Mat origReplicTh =  Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	merge(multiThOrig,origReplicTh);
+
+	/*Ora che abbiamo evidenziato le cose bianche, possiamo sommare all'immagine mascherata originale in modo da riottenere le mele*/
 	masked = masked + origReplicTh;
-	
-	/*bitwise_and(gray, maskHSV , masked);
-	bitwise_and(masked, noBackMask ,masked);
-	*/
-	/*Operazioni Morfologiche, kernel circolare*/
-	/*morphologyEx(masked, morph, MORPH_ERODE, kernelEr, Point(-1, -1));
-	morphologyEx(morph, morph, MORPH_OPEN, kernelOp, Point(-1, -1));*/
+
+	/*Operazioni morfologiche per poter riempire i buchi e rimuovere i bordi frastagliati*/
 	dilate(masked,morph,kernelEr);
 	erode(morph,morph,kernelEr);
 	
 	erode(morph,morph,kernelOp);
 	dilate(morph,morph,kernelOp);
-	//imshow("morph",morph);
-	/*Ricerca componenti connesse come meno di un certo numero di pixel*/
-	 
+
+	/*Ricerca componenti connesse e rimozione in base all'area*/
 	cvtColor(morph,bwmorph,CV_BGR2GRAY);
 	findContours(bwmorph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 
@@ -178,7 +174,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blob){
 		if(areas.at(j)>MAX_AREA || areas.at(j)<MIN_AREA )
 			contours.erase(contours.begin()+j);
 	}
-	//contoursOfInterest = contours;
+
 	/*Calcolo Bounding Rectangle a partire dall'immagine con componenti connesse di interesse*/
 	 vector<Rect> boundRect( contours.size() );
 	 vector<vector<Point> > contours_poly( contours.size() );
