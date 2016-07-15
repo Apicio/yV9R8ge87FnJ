@@ -158,9 +158,10 @@ void MarkerDetector::rotate_90n(cv::Mat &src, cv::Mat &dst, int angle)
 void MarkerDetector::sharpMark(Mat in, vector<Mat > &out, int x, int y, Mat computationMatrix){
 	if(y>=7)return;
 	if(countNonZero(in)>(0.5*in.rows*in.cols))return;
+	if(out.size() >=2) return ;
 	assert(in.rows==in.cols);
     cv::Mat grey;
-
+	
     if ( in.type()==CV_8UC1) grey=in;
     else cv::cvtColor(in,grey,COLOR_BGR2GRAY); 
 	if(y==0) threshold(grey, grey,125, 255, THRESH_BINARY|THRESH_OTSU);
@@ -196,7 +197,7 @@ void MarkerDetector::sharpMark(Mat in, vector<Mat > &out, int x, int y, Mat comp
 		}
 		x= 0;
 	}
-
+	if(out.size() >=2) return ;
 	static cv::Mat id136=cv::Mat::zeros(7,7,CV_8UC1);
 	static cv::Mat id787=cv::Mat::zeros(7,7,CV_8UC1);
 	for (int ii = 0;ii<7;ii++)
@@ -214,7 +215,7 @@ void MarkerDetector::sharpMark(Mat in, vector<Mat > &out, int x, int y, Mat comp
 			   jj==3 && ii==1 || jj==3 && ii==3 || jj==3 && ii==5 || 
 			   jj==4 && ii==1 || jj==4 && ii==3 || jj==4 && ii==5 ||
 			   jj==5 && ii==3)
-				id787.at<uchar>(ii,ii) = 255;
+				id787.at<uchar>(ii,jj) = 255;
 		}
 	}
 	cv::Mat r_id136, r_id787;

@@ -119,7 +119,7 @@ Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 
 void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blob){
 	/*************INIZIALIZZAZIONI**********/
-	Mat gray;
+	Mat gray; 
 	Mat out = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	Mat masked = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	Mat morph = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);

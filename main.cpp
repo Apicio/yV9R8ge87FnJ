@@ -23,15 +23,8 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	char* ip = "192.168.88.202";
-	TheWalkingNao twn;
-/*	twn.init(ip);
-	twn.standUp();
-	twn.moveLeft(.5);
-	twn.restNow();
-	twn.standUp();
-	twn.moveRight(.5);
-	twn.restNow();*/
+	//char* ip = "192.168.88.202";
+	//TheWalkingNao twn;
 	/*NaoUtils nu;
 	nu.takeSomePhotos("../naoImgDist/");*/
 	//nu.explore();*/
@@ -156,6 +149,28 @@ int main(int argc, char* argv[])
 	
 	}
 #endif
+	TheWalkingNao twn; char* ip = "192.168.88.202";
+	NaoUtils nu; ALVideoDeviceProxy camProx(ip, NAOPORT);
+	twn.init(ip);
+	int keyPressed = 0;
+	twn.standUp(); 
+	double angle=0;;
+	while(cv::waitKey(1) != 'e'){
+		Mat image;
+		try{
+		image = nu.see(camProx);
+		imshow("image",image);
+	   twn.ArucoFind(image.clone(),angle,true);
+		cout<<"ANGOLO"<<angle<<endl;
+		if(angle>0 && angle <90 && !twn.isMoving())
+			twn.moveRight(0.5,angle);
+		else if(angle >90 && angle <180 && !twn.isMoving())
+			twn.moveLeft(0.5,angle);
+		else if(!twn.isMoving()) twn.moveForward(0.2);
+		}catch(std::exception& e){cout<<e.what()<<endl;twn.restNow();		}
+	}
+	twn.restNow();
+	
 /*
 whilte non siamo a fine percorso
 leggi immagine della camera
