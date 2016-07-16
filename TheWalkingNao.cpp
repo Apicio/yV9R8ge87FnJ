@@ -3,12 +3,12 @@
 
 TheWalkingNao::TheWalkingNao(){
 /* Configuration */
-	_ImageSharp = false;
-	_SharpSigma = 10;
+	_ImageSharp = true;
+	_SharpSigma = 5;
 	_SharpThreshold = 5;
 	_SharpAmount = 3;
 	_medianBlur = 11;
-	_markSize = 0.15;
+	_markSize = 0.2;
 	_invert = false;
 /* Init */
 	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
