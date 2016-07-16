@@ -456,75 +456,281 @@ void SLIC::DrawContoursAroundSegmentsTwoColors(
 	}
 }
 
+void SLIC::mergeSuperPixel(SuperPixel & in_out, SuperPixel & toSum){
+	/* Merge Histograms */
+	in_out.hist_orig = in_out.hist_orig + toSum.hist_base;
+	normalize(in_out.hist_orig, in_out.hist_base, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
+	/* Update Label */
+
+	/* Update Nearests */
+	vector<int> nearests;
+	for(int i = 0; i<in_out.nearests.size(); i++)
+		if(in_out.nearests.at(i) != toSum.label)
+			nearests.push_back(in_out.nearests.at(i));
+
+	for(int i = 0; i<toSum.nearests.size(); i++)
+		if(toSum.nearests.at(i) != in_out.label)
+			nearests.push_back(toSum.nearests.at(i));
+	in_out.nearests = nearests;
+	
+	/* Update Pixels */
+	in_out.points.insert(in_out.points.end(), toSum.points.begin(), toSum.points.end());
+	toSum.points.clear();
+}
+
 void SLIC::GetPixelsSet(
-	unsigned int*			img,
+	cv::Mat			img,
 	const int*				labels,
 	const int&				width,
 	const int&				height,
 	int numlabels, 
-	vector<vector<cv::Point > > set)
+	vector<SuperPixel > &bagOfSuperPixel,
+	bool**& in_matrix)
 {	
+/* Set init & ADJ Init*/
 	for(int i=0; i<numlabels; i++){
-		vector<cv::Point > component;
-		set.push_back(component);
+		SuperPixel sp;
+		bagOfSuperPixel.push_back(sp);
+		bagOfSuperPixel.at(i).label = i;
 	}
-
-	const int dx[8] = {-1, -1,  0,  1, 1, 1, 0, -1};
-	const int dy[8] = { 0, -1, -1, -1, 0, 1, 1,  1};
-
 	int sz = width*height;
-
-	vector<bool> istaken(sz, false);
-	vector<int> contourx(sz);
-	vector<int> contoury(sz);
-	int mainindex(0);
-	int cind(0);
+	int oldLabelIndex = 0;
+	bool** matrix = new bool*[numlabels];
+	for (int i = 0; i < numlabels; ++i)
+		matrix[i] = new bool[numlabels];
+	for(int kk = 0; kk<numlabels; kk++)
+		for(int qq = 0; qq<numlabels; qq++)
+			matrix[kk][qq] = false;
+/* Push Pixels inside set */	
 	for( int j = 0; j < height; j++ )
-	{
-		for( int k = 0; k < width; k++ )
-		{
-			int np(0);
-			for( int i = 0; i < 8; i++ )
-			{
-				int x = k + dx[i];
-				int y = j + dy[i];
+		for( int k = 0; k < width; k++ ){
+			int index = j*width + k;
+			bagOfSuperPixel.at(labels[index]).points.push_back(cv::Point(k,j));	
+		}
+/* Compute Adj Matrix */
+	for( int j = 0; j < height; j++ )
+		for( int k = 0; k < width; k++ ){
+			int index = j*width + k;
+			oldLabelIndex = k==0? index : oldLabelIndex;
+			if(labels[oldLabelIndex] != labels[index]){
+				matrix[labels[oldLabelIndex]][labels[index]] = true;
+				matrix[labels[index]][labels[oldLabelIndex]] = true;
+				oldLabelIndex = index;
+			}
+		}
+	for( int k = 0; k < width; k++ )
+		for( int j = 0; j < height; j++ ){
+			int index = j*width + k;
+			oldLabelIndex = j==0? index : oldLabelIndex;
+			if(labels[oldLabelIndex] != labels[index]){
+				matrix[labels[oldLabelIndex]][labels[index]] = true;
+				matrix[labels[index]][labels[oldLabelIndex]] = true;
+				oldLabelIndex = index;
+			}
+		}
+	in_matrix = matrix;
+	for(int i=0; i<bagOfSuperPixel.size(); i++)
+		for(int kk = 0; kk<numlabels; kk++)
+			if(matrix[i][kk] || matrix[kk][i])
+				bagOfSuperPixel.at(i).nearests.push_back(kk);
 
-				if( (x >= 0 && x < width) && (y >= 0 && y < height) )
-				{
-					int index = y*width + x;
+	/* Compute Superpixel */
+	for(int i=0; i<bagOfSuperPixel.size(); i++){
+		vector<cv::Point > component = bagOfSuperPixel.at(i).points;
+		bagOfSuperPixel.at(i).superpixel = cv::Mat::zeros(1,component.size(),CV_8UC3);
+		int idx = 0;
+		for(int j=0; j<component.size(); j++){
+			cv::Point p = component.at(j);
+				bagOfSuperPixel.at(i).superpixel.at<cv::Vec3b>(0,idx) = img.at<cv::Vec3b>(p.y,p.x);
+				idx++;
+	}
+#if 0
 
-					//if( false == istaken[index] )//comment this to obtain internal contours
-					{
-						if( labels[mainindex] != labels[index] )
-							np++;
-						else
-							set.at(labels[index]).push_back(cv::Point(k,j));
+	cv::Mat imgHSV, imgYUV;
+	cv::Mat HSVbands[3], YUVbands[3];
+	cvtColor(bagOfSuperPixel.at(i).superpixel,imgHSV,CV_BGR2HSV);
+	cvtColor(bagOfSuperPixel.at(i).superpixel,imgYUV,CV_BGR2YCrCb);
+	double size = bagOfSuperPixel.at(i).superpixel.rows*bagOfSuperPixel.at(i).superpixel.cols;
+	split(imgHSV,HSVbands);
+	split(imgYUV,YUVbands);
+	cv::Mat mask1, mask2, mask3, maskTOT;
+	mask1 = HSVbands[0] <= 90/2;
+	mask2 = HSVbands[0] >= 270/2;
+	mask3 = cv::Mat::zeros(mask2.size(),CV_8UC1);
+	for(int i = 0; i<mask3.rows; i++){
+		for(int j = 0; j<mask3.rows; j++){
+			if(HSVbands[1].at<uchar>(i,j) < HSVbands[2].at<uchar>(i,j)*0.7)
+				mask3.at<uchar>(i,j) = 255;
+		}
+	}
+	maskTOT = mask1 + mask2 + mask3;
+	int numWhite = countNonZero(maskTOT);
+	double fraction = numWhite/size;
+	bagOfSuperPixel.at(i).isOfInterest = fraction>0.2;
+/*2*/
+	double size = bagOfSuperPixel.at(i).superpixel.rows*bagOfSuperPixel.at(i).superpixel.cols;
+	cv::vector<cv::Mat> channels;
+    cv::split(bagOfSuperPixel.at(i).superpixel,channels);
+    cv::Mat blue_channel = channels.at(0);
+    cv::Mat green_channel = channels.at(1);
+    cv::Mat red_channel = channels.at(2);
+	cv::Mat lumMat = (0.2126 * red_channel) + (0.7152 * green_channel) + (0.0722 * blue_channel);
+	//Normalised colour maps
+    cv::Mat red_n = (255 / 3) * (red_channel / lumMat);
+    cv::Mat green_n = (255 / 3) * (green_channel / lumMat);
+    cv::Mat blue_n = (255 / 3) * (blue_channel / lumMat);
+	//Calculate the end RGB components
+    cv::Mat red_d = red_n - ((green_n + blue_n)/2);
+    cv::Mat green_d = green_n - ((red_n + blue_n)/2);
+    cv::Mat blue_d = blue_n - ((red_n + green_n)/2);
+	//Calculate the difference between the red and green mat to get yellow.
+    cv::Mat diffMat;
+    cv::absdiff(red_n, green_n, diffMat);
 
+    //Calulate the Y component
+    cv::Mat yellow_d = (red_n / 2) + (green_n/2) - blue_n - diffMat;
+
+    //Threshold the respective colour channels to their cut off values
+    cv::threshold(red_d, red_d, 0, 255, CV_THRESH_BINARY);
+    cv::threshold(green_d, green_d, 30, 255, CV_THRESH_BINARY);
+    cv::threshold(blue_d, blue_d, 0, 255, CV_THRESH_BINARY);
+    cv::threshold(yellow_d, yellow_d, 0, 255, CV_THRESH_BINARY);
+
+	int numRed = countNonZero(red_d);
+	double fractionRed = numRed/size;
+	int numGreen = countNonZero(green_d);
+	double fractionGreen = numGreen/size;
+	int numYellow = countNonZero(yellow_d);
+	double fractionYellow = numYellow/size;
+	int numBlue = countNonZero(blue_d);
+	double fractionBlue = numBlue/size;
+
+	if(fractionRed > 0.1 || fractionYellow > 0.1)
+		bagOfSuperPixel.at(i).isOfInterest = true;
+	else if (fractionGreen < 0.6)
+		if(fractionBlue == 0)
+			bagOfSuperPixel.at(i).isOfInterest = true;
+		else
+			bagOfSuperPixel.at(i).isOfInterest = false;
+	else
+		bagOfSuperPixel.at(i).isOfInterest = false;
+
+	}
+#endif
+#if 1
+/* Compute Histogram */
+	cv::Mat hsv_base;
+	cvtColor(bagOfSuperPixel.at(i).superpixel, hsv_base, cv::COLOR_BGR2HSV );
+	int h_bins = 50; int s_bins = 60;
+	int histSize[] = { h_bins, s_bins };
+	// hue varies from 0 to 179, saturation from 0 to 255
+	float h_ranges[] = { 0, 180 };
+	float s_ranges[] = { 0, 256 };
+	const float* ranges[] = { h_ranges, s_ranges };
+	int channels[] = { 0, 1 };
+	/// Histograms
+	cv::MatND hist_base;
+	calcHist( &hsv_base, 1, channels, cv::Mat(), hist_base, 2, histSize, ranges, true, false );
+	hist_base.copyTo(bagOfSuperPixel.at(i).hist_orig);
+    normalize( hist_base, hist_base, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
+	bagOfSuperPixel.at(i).hist_base = hist_base;
+	// double base_base = compareHist( hist_base, hist_base, compare_method );
+}
+/* Compare Histograms */
+double soglia = 1.8;
+bool** sims = new bool*[numlabels+1];
+for (int i = 0; i < numlabels; ++i)
+	sims[i] = new bool[numlabels+1];
+for(int kk = 0; kk<numlabels; kk++)
+	for(int qq = 0; qq<numlabels; qq++)
+		sims[kk][qq] = false;
+
+for(int i=0; i<bagOfSuperPixel.size(); i++){
+		SuperPixel ss = bagOfSuperPixel.at(i);
+		cv::MatND hist_curr = ss.hist_base;
+		for(int j=1; j<ss.nearests.size(); j++){
+			SuperPixel Near2SS = bagOfSuperPixel.at(ss.nearests.at(j));
+			double val = compareHist(hist_curr, Near2SS.hist_base, CV_COMP_INTERSECT   );
+			if(val > soglia){
+				sims[ss.label][Near2SS.label] = true;
+				sims[Near2SS.label][ss.label] = true;
+//				bagOfSuperPixel.at(i).similars.push_back(bagOfSuperPixel.at(bagOfSuperPixel.at(i).nearests.at(j)).label);
+//				bagOfSuperPixel.at(bagOfSuperPixel.at(i).nearests.at(j)).similars.push_back(bagOfSuperPixel.at(i).label);
+//				mergeSuperPixel(bagOfSuperPixel.at(i),bagOfSuperPixel.at(bagOfSuperPixel.at(i).nearests.at(j)));
+//				i=0;
+//				j=0;
+		}
+	}
+}
+#endif
+#if 1
+for(int i=0; i<numlabels; i++){
+	for(int j=0; j<numlabels; j++){
+			cout << sims[i][j];
+	}
+}
+
+
+for(int i=0; i<numlabels; i++){
+	cv::Mat rr = cv::Mat::zeros(height,width,CV_8U);
+	for(int j=0; j<numlabels; j++){
+		if(sims[i][j]){
+			int value = rand() %175+80;;
+			SuperPixel ss1 = bagOfSuperPixel.at(i);
+			SuperPixel ss2 = bagOfSuperPixel.at(j);
+			for(int k=0; k<ss1.points.size(); k++){
+				cv::Point p = ss1.points.at(k);
+				rr.at<uchar>(p.y,p.x) = value;			
+			}
+			for(int k=0; k<ss2.points.size(); k++){
+				cv::Point p = ss2.points.at(k);
+				rr.at<uchar>(p.y,p.x) = value;			
+			}
+			for(int q=0; q<numlabels; q++){
+				if(sims[q][j]){
+					SuperPixel ss3 = bagOfSuperPixel.at(q);
+					for(int idx=0; idx<ss3.points.size(); idx++){
+						cv::Point p = ss3.points.at(idx);
+						rr.at<uchar>(p.y,p.x) = value;			
 					}
 				}
 			}
-			if( np > 1 )
-			{
-				contourx[cind] = k;
-				contoury[cind] = j;
-				istaken[mainindex] = true;
-				//img[mainindex] = color;
-				cind++;
-			}
-			mainindex++;
 		}
 	}
+	cv::imshow("abcdef3",rr);
+	cv::waitKey(300);
+}
 
-	cv::Mat rr = cv::Mat::zeros(height,width,CV_8U);
+
+#endif
+		cv::imshow("abcdef",img);
+		cv::waitKey(300);
+
+
+/* Show Result */	
+
+#if 0
 	for(int i=0; i<set.size(); i++){
+		cv::Mat rr = cv::Mat::zeros(height,width,CV_8U);
 		vector<cv::Point > component = set.at(i);
 		for(int j=0; j<component.size(); j++){
 			cv::Point p = component.at(j);
-			rr.at<uchar>(p.y,p.x) = i*255/200;
+				rr.at<uchar>(p.y,p.x) = 255;			
 		}
+		for(int kk = 0; kk<numlabels; kk++){
+			if(matrix[i][kk] || matrix[kk][i]){
+				vector<cv::Point > component = set.at(kk);
+				int value = rand() %175+80;
+				for(int j=0; j<component.size(); j++){
+					cv::Point p = component.at(j);
+					rr.at<uchar>(p.y,p.x) = value;			
+				}
+			}
+		}
+		cv::imshow("ewwiwa",rr);
+		cv::waitKey(300);
 	}
-	cv::imshow("ewwiwa",rr);
-	cv::waitKey(0);
+#endif			
 }
 
 

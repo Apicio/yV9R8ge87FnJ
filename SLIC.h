@@ -20,19 +20,32 @@
 #include <opencv2/opencv.hpp>
 using namespace std;
 
+struct SuperPixel{
+	vector<cv::Point > points;
+	vector<int> nearests;
+	vector<int> similars;
+	cv::Mat superpixel;
+	cv::Mat hist_base;
+	cv::Mat hist_orig;
+	int label;
+	bool isOfInterest;
+};
+
 
 class SLIC  
 {
 public:
 	SLIC();
 	virtual ~SLIC();
+	void SLIC::mergeSuperPixel(SuperPixel & a,SuperPixel & b);
 	void SLIC::GetPixelsSet(
-	unsigned int*			img,
+	cv::Mat 			img,
 	const int*				labels,
 	const int&				width,
 	const int&				height,
 	int numlabels,
-	vector<vector<cv::Point > > set);
+	vector<SuperPixel > &set,
+	bool**& matrix);
 	//============================================================================
 	// Superpixel segmentation for a given step size (superpixel size ~= step*step)
 	//============================================================================
@@ -263,3 +276,84 @@ private:
 };
 
 #endif // !defined(_SLIC_H_INCLUDED_)
+
+
+
+
+#if 0 //BACKUP
+
+	cv::Mat img;
+for(int i=1;i<121;i++){
+		stringstream img_file;
+		img_file<<"DatasetLippi\\im ("<<i<<").jpg";
+		img = imread(img_file.str());
+int width = img.cols;
+int height = img.rows;
+resize(img, img, Size(width/2,height/2), 0, 0, INTER_NEAREST);
+width = img.cols;
+height = img.rows;
+int sz = width*height;
+int m_compactness = 10;
+int m_spcount = 200;
+int numlabels = 20;
+int* labels = new int[sz];
+SLIC slic;
+//---------------------------------------------------------
+if(m_spcount < 20 || m_spcount > sz/4) m_spcount = sz/200;//i.e the default size of the superpixel is 200 pixels
+if(m_compactness < 1.0 || m_compactness > 80.0) m_compactness = 20.0;
+//---------------------------------------------------------
+
+UINT* imgBuffer = new UINT[sz];
+cv::Mat newImage;
+cv::cvtColor(img, newImage, CV_BGR2BGRA);
+memcpy( imgBuffer, (UINT*)newImage.data, sz*sizeof(UINT) );
+
+slic.DoSuperpixelSegmentation_ForGivenNumberOfSuperpixels(imgBuffer, width, height, labels, numlabels, m_spcount, m_compactness);
+//slic.DoSuperpixelSegmentation_ForGivenSuperpixelSize(img, width, height, labels, numlabels, 10, m_compactness);//demo
+slic.SaveSuperpixelLabels(labels,width,height,"fuck.txt","C:\\Users\\leo\\Desktop\\NaoVision\\"); 
+slic.DrawContoursAroundSegments(imgBuffer, labels, width, height, Scalar(0,0));
+vector<vector<cv::Point > > set;
+slic.GetPixelsSet(imgBuffer, labels, width, height, numlabels, set);
+//if(labels) delete [] labels;
+cv::Mat result(height, width, CV_8UC4);
+memcpy(result.data, imgBuffer, sz*sizeof(UINT));
+cvtColor(result, result, CV_BGRA2BGR);
+//picHand.SavePicture(imgBuffer, width, height, picvec[k], saveLocation, 1, "_SLIC");// 0 is for BMP and 1 for JPEG)
+//if(img) delete [] img;
+imshow("abc",result);
+waitKey(1);
+
+Mat bands[3];
+split(result,bands);
+Mat mask1 = bands[0] == 0;
+Mat mask2 = bands[1] == 0;
+Mat mask3 = bands[2] == 0;
+Mat mask4 = Mat::zeros(img.size(),CV_8U);
+for(int idx = 0; idx < mask4.rows; idx++){
+	mask4.at<uchar>(idx,0) = 255;
+	mask4.at<uchar>(idx,1) = 255;
+	mask4.at<uchar>(idx,mask4.cols-1) = 255;
+	mask4.at<uchar>(idx,mask4.cols-2) = 255;
+}
+for(int idx = 0; idx < mask4.cols; idx++){
+	mask4.at<uchar>(0,idx) = 255;
+	mask4.at<uchar>(1,idx) = 255;
+	mask4.at<uchar>(mask4.rows-1,idx) = 255;
+	mask4.at<uchar>(mask4.rows-2,idx) = 255;
+}
+bitwise_and(mask1,  mask2, mask2);
+bitwise_and(mask3,  mask2, mask3);
+mask4 = mask3 + mask4;
+imshow("abcd",mask4);
+waitKey(1);
+vector< vector<Point> > contours;
+findContours(mask4, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+Mat toReturn = img.clone();
+for(int uu = 0; uu<contours.size(); uu++){
+	drawContours(toReturn,contours,uu,Scalar(rand() % 256,rand() % 256,rand() % 256),CV_FILLED);
+}
+imshow("abcde",toReturn);
+waitKey(1);
+cout << i << endl;
+}
+#endif

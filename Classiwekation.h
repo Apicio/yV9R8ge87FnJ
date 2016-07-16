@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
-#define MODEL "MP_99.7.model"
+#define MODEL "..\\JavaSrc\\TestStruct\\MP_99.7.model"
 using namespace std;
 
 #define PATH_SEPARATOR ';' /* define it to be ':' on Solaris */
