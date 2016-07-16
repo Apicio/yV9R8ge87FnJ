@@ -4,12 +4,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
-#define MODEL "MP_99.7.model"
+#define MODEL "..\\JavaSrc\\TestStruct\\"
 using namespace std;
 
 #define PATH_SEPARATOR ';' /* define it to be ':' on Solaris */
 #define USER_CLASSPATH "." /* where Prog.class is */
-#define OPTION_STRING "-Djava.class.path=C:\\Users\\leo\\Desktop\\NaoVision\\JavaSrc\\TestStruct;C:\\Users\\leo\\Desktop\\NaoVision\\JavaSrc\\TestStruct\\weka.jar"
+#define OPTION_STRING "-Djava.class.path=C:\\Users\\leo\\Desktop\\LAST_NaoVision\\JavaSrc\\TestStruct;C:\\Users\\leo\\Desktop\\LAST_NaoVision\\JavaSrc\\TestStruct\\weka.jar"
 
 struct ControlDetail
 {

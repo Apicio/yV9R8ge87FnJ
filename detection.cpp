@@ -117,7 +117,7 @@ Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 }
 
 
-void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blob){
+void detect2(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray; 
 	Mat out = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
@@ -200,12 +200,14 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blob){
 			regionsOfInterest.push_back(img(tmpRect));
 			b.cuttedImages.push_back(img(tmpRect));
 			b.blobsImage.push_back(cont(tmpRect));
+			b.rectangles.push_back(tmpRect);
 			toPrint = tmpRect;
 		}
 		else{
 			toPrint = boundRect[idx];
 			regionsOfInterest.push_back(img(boundRect[idx]));
 			b.cuttedImages.push_back(img(boundRect[idx]));
+			b.rectangles.push_back(boundRect[idx]);
 			b.blobsImage.push_back(cont(boundRect[idx]));
 		}
 		Point centroid = computeCentroid(contours[idx]);
@@ -217,7 +219,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blob){
 		circle( cont, center[idx], (int)radius[idx], color, 2, 8, 0 );*/
 
 	}
-	blob.push_back(b);
+	blob = b;
 	//out = out+cont;
 	bitwise_xor(out,cont,out);
 	

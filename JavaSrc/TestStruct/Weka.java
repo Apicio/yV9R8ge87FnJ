@@ -15,60 +15,120 @@ import java.io.InputStreamReader;
 
 public class Weka
 {
-	public SerializedClassifier sc;
+	public SerializedClassifier scRedApple, scYellowApple, scGlass, scCup;
 	//public ArrayList<Attribute> att;
-	
+
 	public Weka(String model){
-		sc = new SerializedClassifier();
-/*		att = new ArrayList<Attribute>();
-		att.add(new Attribute("meanHue"));
-		att.add(new Attribute("mom1"));
-		att.add(new Attribute("mom2"));
-		att.add(new Attribute("mom3"));
-		att.add(new Attribute("mom4"));
-		att.add(new Attribute("mom5"));
-		att.add(new Attribute("mom6"));
-		att.add(new Attribute("mom7"));
-		att.add(new Attribute("stdDevHue"));
-		att.add(new Attribute("entropy"));
-		att.add(new Attribute("area"));
-		att.add(new Attribute("distance"));*/
-		sc.setModelFile(new File(model));
+		scRedApple = new SerializedClassifier();
+		scRedApple.setModelFile(new File("..//JavaSrc//TestStruct//mela_rossa.model"));
+
+		scYellowApple = new SerializedClassifier();
+		scYellowApple.setModelFile(new File("..//JavaSrc//TestStruct//mela_gialla.model"));
+
+		scGlass = new SerializedClassifier();
+		scGlass.setModelFile(new File("..//JavaSrc//TestStruct//bicchiere.model"));
+
+		scCup = new SerializedClassifier();
+		scCup.setModelFile(new File("..//JavaSrc//TestStruct//tazzina.model"));
+
 	}
+
 	public double runClassification(String features){
-/*		String[] parts = features.split(",");
+		/*		String[] parts = features.split(",");
 		double[] nums = new double[parts.length];
 		for (int i = 0; i < nums.length; i++) {
 			nums[i] = Double.parseDouble(parts[i]);
 		} */
 		String toInstance = "@relation Nao_Vision_Cup\r\n"+
-							"\n"+
-							"@attribute meanHue numeric\r\n"+
-							"@attribute mom1 numeric\r\n"+
-							"@attribute mom2 numeric\r\n"+
-							"@attribute mom3 numeric\r\n"+
-							"@attribute mom4 numeric\r\n"+
-							"@attribute mom5 numeric\r\n"+
-							"@attribute mom6 numeric\r\n"+
-							"@attribute mom7 numeric\r\n"+
-							"@attribute stdDevHue numeric\r\n"+
-							"@attribute entropy numeric\r\n"+
-							"@attribute area numeric\r\n"+
-							"@attribute distance numeric\r\n"+
-							"@attribute class {mela_rossa,mela_gialla,bicchiere,tazzina}\r\n"+
-							"\r\n"+
-							"@data\r\n"+
-							features;
+				"\n"+
+				"@attribute meanHue numeric\r\n"+
+				"@attribute mom1 numeric\r\n"+
+				"@attribute mom2 numeric\r\n"+
+				"@attribute mom3 numeric\r\n"+
+				"@attribute mom4 numeric\r\n"+
+				"@attribute mom5 numeric\r\n"+
+				"@attribute mom6 numeric\r\n"+
+				"@attribute mom7 numeric\r\n"+
+				"@attribute stdDevHue numeric\r\n"+
+				"@attribute entropy numeric\r\n"+
+				"@attribute area numeric\r\n"+
+				"@attribute distance numeric\r\n"+
+				"@attribute class {mela_rossa,mela_gialla,bicchiere,tazzina}\r\n"+
+				"\r\n"+
+				"@data\r\n"+
+				features;
 		System.out.println(toInstance);
-		double val = Double.MIN_VALUE;
+		int count=0;;
+		boolean toCheckMaxProb=false;
+		double values[] = new double[4];
+		double tmp[] = new double[2];
+		double currMax = Double.MIN_VALUE;
+		String winner = null;
+		double reject=0.4;
 		try {
 			InputStream is = new ByteArrayInputStream(toInstance.getBytes());
 			Instances unlabeled = new Instances(new BufferedReader(new InputStreamReader(is)));
-			unlabeled.setClassIndex(unlabeled.numAttributes() - 1);			
-			val=sc.classifyInstance(unlabeled.get(0));
+			unlabeled.setClassIndex(unlabeled.numAttributes() - 1);		
+			/* Mele rosse: 1;
+			 * Mele gialle: 2
+			 * Bicchiere: 3
+			 * Tazzina: 4
+			 * */
+			values[0] = scRedApple.classifyInstance(unlabeled.get(0));
+			values[1] = scYellowApple.classifyInstance(unlabeled.get(0));
+			values[2] = scGlass.classifyInstance(unlabeled.get(0));
+			values[3] = scCup.classifyInstance(unlabeled.get(0));
+			/*MP risponde o non risponde, quindi i valori sono 1 o 0:
+			 * nel caso idale abbiamo, ad esempio 1 0 0 0
+			 * nel caso peggiore possiamo avere 1 1 0 0, come decidiamo? Vediamo
+			 * le probabilità e decidiamo dunque a massima prob.*/
+			for(int i=0;i<values.length;i++){
+				System.out.println(values[i]);
+				if(values[i]==1)
+					count++;
+				}
+			if(count>1){ //si decide a massima probabilità
+				tmp = scRedApple.distributionForInstance(unlabeled.get(0));
+				System.out.println("VETTORE PER MELE ROSSE: "+tmp[0]+" "+tmp[1]);
+				if(tmp[0] > scYellowApple.distributionForInstance(unlabeled.get(0))[0]){
+					currMax = tmp[0];
+					winner = "red";
+				}
+				else{
+					currMax = scYellowApple.distributionForInstance(unlabeled.get(0))[0];
+					winner = "yellow";
+				}
+				tmp = scGlass.distributionForInstance(unlabeled.get(0));
+				if(tmp[0]>currMax){
+					currMax=tmp[0];
+					winner = "glass";
+				}
+				tmp = scCup.distributionForInstance(unlabeled.get(0));
+				if(tmp[0]>currMax){
+					currMax=tmp[0];
+					winner = "cup";
+				}
+				
+			}
+			if(currMax<reject)
+					winner ="none";
+
+			System.out.println("CurrMax: " +currMax);
+		
 		} catch (Exception e) {e.printStackTrace();}
-		
-		return val;
-		
+		if(winner!=null)	{	
+			if(winner.equals("red"))
+				return 1;
+			else if(winner.equals("yellow"))
+				return 2;
+			else if(winner.equals("glass"))
+				return 3;
+			else if(winner.equals("cup"))
+				return 4;
+			else if(winner.equals("none"))
+				return 5;
+		}
+		return -1; //Incorrect classification
+
 	}
 }

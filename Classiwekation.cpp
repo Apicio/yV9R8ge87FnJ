@@ -21,6 +21,7 @@ Classiwekation::Classiwekation(void)
 	jmethodID clsWekaConst = env->GetMethodID(clsWeka, "<init>", "(Ljava/lang/String;)V");
 	jstring StringArg = env->NewStringUTF(MODEL);
 	WekaObj = env->NewObject(clsWeka, clsWekaConst, StringArg);
+
 }
 
 double Classiwekation::classify(string features){	

@@ -59,6 +59,7 @@ std::string FeatExtract::extractDuringMovement(Blob b, int currIdx, bool toMask)
 	s1<<readStdDevHue(img);
 	s1<<computeEntropy(img)<<",";
 	s1<<b.area[currIdx]<<","<<b.distance[currIdx]<<",";
+	s1<<"?"; //per Weka
 	return s1.str();
 }
 
