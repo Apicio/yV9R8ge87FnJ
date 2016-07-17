@@ -53,13 +53,12 @@ public class Weka
 				"@attribute entropy numeric\r\n"+
 				"@attribute area numeric\r\n"+
 				"@attribute distance numeric\r\n"+
-				"@attribute class {mela_rossa,mela_gialla,bicchiere,tazzina}\r\n"+
+				"@attribute class {0, 3}\r\n"+
 				"\r\n"+
 				"@data\r\n"+
 				features;
 		System.out.println(toInstance);
-		int count=0;;
-		boolean toCheckMaxProb=false;
+		
 		double values[] = new double[4];
 		double tmp[] = new double[2];
 		double currMax = Double.MIN_VALUE;
@@ -69,46 +68,63 @@ public class Weka
 			InputStream is = new ByteArrayInputStream(toInstance.getBytes());
 			Instances unlabeled = new Instances(new BufferedReader(new InputStreamReader(is)));
 			unlabeled.setClassIndex(unlabeled.numAttributes() - 1);		
-			/* Mele rosse: 1;
-			 * Mele gialle: 2
-			 * Bicchiere: 3
-			 * Tazzina: 4
+			/* Mele rosse: 0;
+			 * Mele gialle: 1
+			 * Bicchiere: 2
+			 * Tazzina: 3
 			 * */
 			values[0] = scRedApple.classifyInstance(unlabeled.get(0));
 			values[1] = scYellowApple.classifyInstance(unlabeled.get(0));
 			values[2] = scGlass.classifyInstance(unlabeled.get(0));
 			values[3] = scCup.classifyInstance(unlabeled.get(0));
+			
 			/*MP risponde o non risponde, quindi i valori sono 1 o 0:
 			 * nel caso idale abbiamo, ad esempio 1 0 0 0
 			 * nel caso peggiore possiamo avere 1 1 0 0, come decidiamo? Vediamo
 			 * le probabilità e decidiamo dunque a massima prob.*/
+			int count=0;;
 			for(int i=0;i<values.length;i++){
 				System.out.println(values[i]);
-				if(values[i]==1)
+				if(values[i]==0)
 					count++;
 				}
-			if(count>1){ //si decide a massima probabilità
+			if(count>1){ //COMPETIZIONE: decidiamo a massima probabilità
 				tmp = scRedApple.distributionForInstance(unlabeled.get(0));
-				System.out.println("VETTORE PER MELE ROSSE: "+tmp[0]+" "+tmp[1]);
-				if(tmp[0] > scYellowApple.distributionForInstance(unlabeled.get(0))[0]){
-					currMax = tmp[0];
+				System.out.print("VETTORE PER MELE ROSSE: "+tmp[0]+" "+tmp[1]);
+				if(tmp[1] >currMax){
+					currMax = tmp[1];
 					winner = "red";
 				}
-				else{
-					currMax = scYellowApple.distributionForInstance(unlabeled.get(0))[0];
+				tmp = scYellowApple.distributionForInstance(unlabeled.get(0));
+				System.out.print("VETTORE PER MELE GIALLE: "+tmp[0]+" "+tmp[1]);
+				if(tmp[1] >currMax){
+					currMax =tmp[1];
 					winner = "yellow";
 				}
 				tmp = scGlass.distributionForInstance(unlabeled.get(0));
-				if(tmp[0]>currMax){
-					currMax=tmp[0];
+				System.out.print("VETTORE PER  BICCHIERE: "+tmp[0]+" "+tmp[1]);
+				if(tmp[1]>currMax){
+					currMax=tmp[1];
 					winner = "glass";
 				}
+				
 				tmp = scCup.distributionForInstance(unlabeled.get(0));
-				if(tmp[0]>currMax){
-					currMax=tmp[0];
+				System.out.print("VETTORE PER  TAZZINA: "+tmp[0]+" "+tmp[1]);
+				if(tmp[1]>currMax){
+					currMax=tmp[1];
 					winner = "cup";
 				}
 				
+			}
+			else if(count == 1){
+				if(values[0] == 0)
+					winner = "red";
+				if(values[1] == 0)
+					winner ="yellow";
+				if(values[2] == 0)
+					winner ="glass";
+				if(values[3] == 0)
+					winner ="cup";
 			}
 			if(currMax<reject)
 					winner ="none";

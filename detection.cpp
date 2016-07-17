@@ -115,7 +115,7 @@ Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 	merge(newBands,3,toReturn);
 	return toReturn;
 }
-
+/*
 Mat bwareaopen(Mat& img, int size)
  {
      CBlobResult blobs;
@@ -145,7 +145,7 @@ Mat removeUseless(Mat& img, int low, int hight)
      }
      return newimg;
  }
-
+ */
 Mat computeWhiteMaskLight(Mat& input){
 	Mat img, gray;
 	input.clone().convertTo(img,CV_64F);
@@ -187,7 +187,7 @@ Mat computeWhiteMaskLight(Mat& input){
 	findContours(mask, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	vector<double> areas = computeArea(contours);
 	for(int j = areas.size()-1; j>=0; j--){
-		if(areas.at(j)>10000 || areas.at(j)<400 ) // 10000 400
+		if(areas.at(j)>MAX_AREA || areas.at(j)<MIN_AREA ) // 10000 400
 			contours.erase(contours.begin()+j);
 	}
 	Mat out = Mat::zeros(Size(img.cols,img.rows), CV_8U);
@@ -217,7 +217,7 @@ Mat computeWhiteMaskShadow(Mat& img)
 	findContours(maskT, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	vector<double> areas = computeArea(contours);
 	for(int j = areas.size()-1; j>=0; j--){
-		if(areas.at(j)>10000 || areas.at(j)<400 )
+		if(areas.at(j)>MAX_AREA || areas.at(j)<MIN_AREA )
 			contours.erase(contours.begin()+j);
 	}
 	Mat out = Mat::zeros(Size(img.cols,img.rows), CV_8U);
@@ -226,7 +226,7 @@ Mat computeWhiteMaskShadow(Mat& img)
 	return out;
  }
 
-void detect2(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
+void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray; 
 	Mat out = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
@@ -245,7 +245,6 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
 	Mat kernelOp = getStructuringElement(MORPH_ELLIPSE,Size(13,13));
 	vector<Mat> BGRbands;  split(img,BGRbands);
 	vector< vector<Point> > contours;
-	Blob b; b.originalImage=img;
 	/***************************************/
 	/*cvtColor(img,gray,CV_BGR2GRAY);
 	gray = (gray!=0);
@@ -279,7 +278,6 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
 #else
 	morph = masked;
 #endif
-
 	/*Ricerca componenti connesse e rimozione in base all'area*/
 	cvtColor(morph,bwmorph,CV_BGR2GRAY);
 	findContours(bwmorph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
@@ -296,6 +294,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
 	 vector<float>radius( contours.size() );
 	 /*Costruzione immagine finale ed estrazione regioni di interesse*/
 	for (int idx = 0; idx < contours.size(); idx++){
+		Blob b; b.originalImage = &img;
 		Scalar color(255);
 		approxPolyDP( Mat(contours[idx]), contours_poly[idx], 3, true );
 		boundRect[idx] = boundingRect( Mat(contours_poly[idx]) );
@@ -310,137 +309,41 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
 		
 		drawContours(cont, contours, idx, color, CV_FILLED, 8);
 		if(tmpRect.x>0 && tmpRect.y>0 && tmpRect.x+tmpRect.width < morph.cols && tmpRect.y+tmpRect.height < morph.rows){ //Se il nuovo rettangolo allargato
-																													// NON esce fuori, accettalo
-			regionsOfInterest.push_back(img(tmpRect));
-			b.cuttedImages.push_back(img(tmpRect));
-			b.blobsImage.push_back(cont(tmpRect));
-			b.rectangles.push_back(tmpRect);
+																														// NON esce fuori dall'immagine, accettalo
+			regionsOfInterest.push_back(masked(tmpRect));
+			b.cuttedWithBack = img(tmpRect);
+			b.cuttedImages = masked(tmpRect);
+			b.blobsImage = cont(tmpRect);
+			b.rectangles = tmpRect;
 			toPrint = tmpRect;
 		}
 		else{
 			toPrint = boundRect[idx];
-			regionsOfInterest.push_back(img(boundRect[idx]));
-			b.cuttedImages.push_back(img(boundRect[idx]));
-			b.rectangles.push_back(boundRect[idx]);
-			b.blobsImage.push_back(cont(boundRect[idx]));
+			regionsOfInterest.push_back(masked(boundRect[idx]));
+			b.cuttedImages = masked(boundRect[idx]);
+			b.cuttedWithBack = img(boundRect[idx]);
+			b.rectangles = boundRect[idx];
+			b.blobsImage = cont(boundRect[idx]);
 		}
 		Point centroid = computeCentroid(contours[idx]);
-		b.centroid.push_back(centroid);
-		b.area.push_back(contourArea(contours[idx]));
-		b.distance.push_back(HEIGH - centroid.y);
+		b.centroid = centroid;
+		b.area = contourArea(contours[idx]);
+		b.distance = HEIGH - centroid.y;
 		
 		/*rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
 		circle( cont, center[idx], (int)radius[idx], color, 2, 8, 0 );*/
-
+		blobs.push_back(b);
 	}
-	blob = b;
+	
 	//out = out+cont;
 	bitwise_xor(out,cont,out);
 	
-	/*namedWindow("out",WINDOW_NORMAL);
+/*	imshow("img",img);
 	imshow("out",out);
 	waitKey(0);*/
 }
 
-void detect3(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
-	/*************INIZIALIZZAZIONI**********/
-	Mat gray; 
-	Mat out = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat masked = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat morph = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat bwmorph = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat cont = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat maskHSV = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat noBackMask = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
-	Mat thMasked; Mat thOrig; Mat bwOrig; Mat bwNoBackMask;
-	cout<<kernelEr<<endl;
-	Mat kernelOp = getStructuringElement(MORPH_ELLIPSE,Size(13,13));
-	vector<Mat> BGRbands;  split(img,BGRbands);
-	vector< vector<Point> > contours;
-	maskHSV		  = detectShadows(img);
-	noBackMask    = backgroundRemoval(img);
-	Blob b; b.originalImage=img;
-	/***************************************/
-	/*cvtColor(img,gray,CV_BGR2GRAY);
-	gray = (gray!=0);
-	imshow("gray",gray);*/
-	/*Rimozione Ombre e Background*/
-//	masked = applyMaskBandByBand(maskHSV,BGRbands); split(masked,BGRbands);
-	/// Reduce noise with a kernel 3x3
-	Mat src_gray,detected_edges;
-	cvtColor( img, src_gray, CV_BGR2GRAY );
-	int edgeThresh = 1;
-	int lowThreshold = 10;
-	int max_lowThreshold = 60;
-	int ratio = 3;
-	int kernel_size = 3;
-	char* window_name = "Edge Map";
-	/// Canny detector
-	Canny( src_gray, detected_edges, lowThreshold, max_lowThreshold, kernel_size, true );
-	/*Operazioni morfologiche per poter riempire i buchi e rimuovere i bordi frastagliati*/
-	findContours(detected_edges, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-	dilate(detected_edges,detected_edges,kernelEr);
-	erode(detected_edges,detected_edges,kernelEr);
 
-	imshow("or",img);
-	waitKey(0);
-	imshow("det",detected_edges);
-	waitKey(0);
-	vector<double> areas = computeArea(contours);
-
-	/*Calcolo Bounding Rectangle a partire dall'immagine con componenti connesse di interesse*/
-	 vector<Rect> boundRect( contours.size() );
-	 vector<vector<Point> > contours_poly( contours.size() );
-	 vector<Point2f>center( contours.size() ); 
-	 vector<float>radius( contours.size() );
-	 /*Costruzione immagine finale ed estrazione regioni di interesse*/
-	for (int idx = 0; idx < contours.size(); idx++){
-		Scalar color(255);
-		approxPolyDP( Mat(contours[idx]), contours_poly[idx], 3, true );
-		boundRect[idx] = boundingRect( Mat(contours_poly[idx]) );
-		
-		minEnclosingCircle( (Mat)contours_poly[idx], center[idx], radius[idx] );
-	//	Rect tmpRect(center[idx].x-boundRect[idx].width/2,center[idx].y-boundRect[idx].height/2,boundRect[idx].width,boundRect[idx].height);
-		Rect tmpRect(center[idx].x-radius[idx],center[idx].y-radius[idx],radius[idx]*2,radius[idx]*2);
-		//Rect tmpRect = boundRect[idx];
-		Rect toPrint; 
-		tmpRect += Size(tmpRect.width*RECT_AUGMENT ,tmpRect.height*RECT_AUGMENT);			  // Aumenta area di RECT_ARGUMENT
-		tmpRect -= Point((tmpRect.width*RECT_AUGMENT)/2 , (tmpRect.height*RECT_AUGMENT)/2 ); // Ricentra il rettangolo
-		
-		drawContours(cont, contours, idx, color, CV_FILLED, 8);
-		if(tmpRect.x>0 && tmpRect.y>0 && tmpRect.x+tmpRect.width < morph.cols && tmpRect.y+tmpRect.height < morph.rows){ //Se il nuovo rettangolo allargato
-																													// NON esce fuori, accettalo
-			regionsOfInterest.push_back(img(tmpRect));
-			b.cuttedImages.push_back(img(tmpRect));
-			b.blobsImage.push_back(cont(tmpRect));
-			b.rectangles.push_back(tmpRect);
-			toPrint = tmpRect;
-		}
-		else{
-			toPrint = boundRect[idx];
-			regionsOfInterest.push_back(img(boundRect[idx]));
-			b.cuttedImages.push_back(img(boundRect[idx]));
-			b.rectangles.push_back(boundRect[idx]);
-			b.blobsImage.push_back(cont(boundRect[idx]));
-		}
-		Point centroid = computeCentroid(contours[idx]);
-		b.centroid.push_back(centroid);
-		b.area.push_back(contourArea(contours[idx]));
-		b.distance.push_back(HEIGH - centroid.y);
-		
-		/*rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
-		circle( cont, center[idx], (int)radius[idx], color, 2, 8, 0 );*/
-
-	}
-	blob = b;
-	//out = out+cont;
-	bitwise_xor(out,cont,out);
-	
-	/*namedWindow("out",WINDOW_NORMAL);
-	imshow("out",out);
-	waitKey(0);*/
-}
 
 
 //void detect(Mat img, vector<Mat>& regionsOfInterest){
