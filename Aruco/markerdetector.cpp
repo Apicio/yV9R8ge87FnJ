@@ -34,8 +34,8 @@ or implied, of Rafael Muñoz Salinas.
 #include <fstream>
 #include "arucofidmarkers.h"
 #include <valarray>
-#define SHARP 1
-#define SOGLIA 0.2
+#define SHARP 0
+#define SOGLIA 0.3
 using namespace std;
 using namespace cv;
 
@@ -50,7 +50,7 @@ namespace aruco
 MarkerDetector::MarkerDetector()
 {
     _doErosion=false;
-	_doClose = true;
+	_doClose = false;
 	_sizeCloseX = 2;
 	_sizeCloseY = 2;
     _enableCylinderWarp=false;
@@ -310,7 +310,8 @@ void MarkerDetector::detect ( const  cv::Mat &input,vector<Marker> &detectedMark
 #if SHARP
 		vector<Mat > out;
 		out.push_back(canonicalMarker);
-		for(int idx = 0; idx <out.size(); idx++){	
+		for(int idx = 0; idx <out.size(); idx++){
+			if(idx>0)
 			cout << idx << endl;
 			canonicalMarker = out.at(idx);
 #endif        		

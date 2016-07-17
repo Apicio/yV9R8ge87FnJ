@@ -4,12 +4,12 @@
 TheWalkingNao::TheWalkingNao(){
 /* Configuration */
 	_ImageSharp = true;
-	_SharpSigma = 10;
+	_SharpSigma = 5;
 	_SharpThreshold = 5;
 	_SharpAmount = 3;
 	_medianBlur = 11;
-	_markSize = 0.15;
-	_invert = true;
+	_markSize = 0.2;
+	_invert = false;
 /* Init */
 	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
 	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
@@ -77,7 +77,6 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 #endif
 /* for each marker, draw info and its boundaries in the image */
 		for (unsigned int i=0;i<Markers.size();i++) {
-			cout << endl << "N: " << k++ << endl;
 			double v1[] = {Markers[i].at(0).x, Markers[i].at(1).x, Markers[i].at(2).x, Markers[i].at(3).x};
 			double v2[] = {Markers[i].at(0).y, Markers[i].at(1).y, Markers[i].at(2).y, Markers[i].at(3).y};
 			double maxX = fmax(v1,4);
@@ -210,32 +209,41 @@ double TheWalkingNao::fmax(double element[], int size){
 void TheWalkingNao::init(const char* robotIP){
 	this->motion = new AL::ALMotionProxy(robotIP,PORT); 
 	this->robotPosture = new AL::ALRobotPostureProxy(robotIP,PORT);
+	
+
+	
 }
 void TheWalkingNao::standUp() {
 	/* required position before moving */
- 	robotPosture->goToPosture("StandInit", 0.1);
+ 	robotPosture->goToPosture("StandInit", 0.5);
  }
  
- void TheWalkingNao::moveLeft(float meters) {
+ void TheWalkingNao::moveLeft(float meters,double angle) {
  	/* moves to the left, rotating torso 90 deg. counter-clockwise */
-	motion->moveTo(0,0,1.5709);
- 	motion->moveTo(meters, 0, 0);
+	motion->moveTo(0,0,angle);
+ 	motion->post.moveTo(meters, 0, 0);
  }
  
- void TheWalkingNao::moveRight(float meters) {
+ void TheWalkingNao::moveRight(float meters,double angle) {
  	/* moves to the right, rotating torso 90 deg. clockwise */
-	motion->moveTo(0, 0, -1.5709);
- 	motion->moveTo(meters, 0, 0);
+	motion->moveTo(0, 0, -angle);
+ 	motion->post.moveTo(meters, 0, 0);
  }
  
  void TheWalkingNao::moveForward(float meters) {
  	/* moves forward, without torso rotation */
- 	motion->moveTo(meters, 0, 0);
+ 	motion->post.moveTo(meters, 0, 0);
  }
 
   void TheWalkingNao::restNow() {
  	/* moves forward, without torso rotation */
  	motion->rest();
  }
+bool TheWalkingNao::isMoving(){
+	return motion->moveIsActive();
+}
+  
+
+
 
 TheWalkingNao::~TheWalkingNao(void){}

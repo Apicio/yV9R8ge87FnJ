@@ -478,6 +478,46 @@ void SLIC::mergeSuperPixel(SuperPixel & in_out, SuperPixel & toSum){
 	toSum.points.clear();
 }
 
+
+void scanColor(cv::Mat& rr, int id_col, int id_row, bool**& sims, int size, vector<SuperPixel > &bagOfSuperPixel, int value, bool isRowScan){
+	if(isRowScan){
+		for(int i=0; i<size; i++){
+			if(sims[id_row][i]){
+				sims[id_row][i] = false;
+				SuperPixel ss1 = bagOfSuperPixel.at(i);
+				SuperPixel ss2 = bagOfSuperPixel.at(id_row);
+				for(int k=0; k<ss1.points.size(); k++){
+					cv::Point p = ss1.points.at(k);
+					rr.at<uchar>(p.y,p.x) = value;			
+				}
+				for(int k=0; k<ss2.points.size(); k++){
+					cv::Point p = ss2.points.at(k);
+					rr.at<uchar>(p.y,p.x) = value;			
+				}
+				scanColor(rr, i, id_row, sims, size, bagOfSuperPixel, value, false);
+			}
+		}
+	}else{
+		for(int i=0; i<size; i++){
+			if(sims[i][id_col]){
+				sims[i][id_col] = false;
+				SuperPixel ss1 = bagOfSuperPixel.at(i);
+				SuperPixel ss2 = bagOfSuperPixel.at(id_col);
+				for(int k=0; k<ss1.points.size(); k++){
+					cv::Point p = ss1.points.at(k);
+					rr.at<uchar>(p.y,p.x) = value;			
+				}
+				for(int k=0; k<ss2.points.size(); k++){
+					cv::Point p = ss2.points.at(k);
+					rr.at<uchar>(p.y,p.x) = value;			
+				}
+				scanColor(rr, id_col, i, sims, size, bagOfSuperPixel, value, true);
+			}
+		}
+	}
+}
+
+
 void SLIC::GetPixelsSet(
 	cv::Mat			img,
 	const int*				labels,
@@ -621,8 +661,13 @@ void SLIC::GetPixelsSet(
 /* Compute Histogram */
 	cv::Mat hsv_base;
 	cvtColor(bagOfSuperPixel.at(i).superpixel, hsv_base, cv::COLOR_BGR2HSV );
-	int h_bins = 50; int s_bins = 60;
+	int h_bins = 180; int s_bins = 256;
 	int histSize[] = { h_bins, s_bins };
+	Mat1b HSVbands[3];
+	split(hsv_base,HSVbands);
+	imadjust(HSVbands[2],HSVbands[2],1, Vec2i(0, 255), Vec2i(0, 255));
+	vector<Mat> multiThOrig; multiThOrig.push_back(HSVbands[0]); multiThOrig.push_back(HSVbands[1]); multiThOrig.push_back(HSVbands[2]);
+	cv::merge(multiThOrig,hsv_base);
 	// hue varies from 0 to 179, saturation from 0 to 255
 	float h_ranges[] = { 0, 180 };
 	float s_ranges[] = { 0, 256 };
@@ -632,50 +677,40 @@ void SLIC::GetPixelsSet(
 	cv::MatND hist_base;
 	calcHist( &hsv_base, 1, channels, cv::Mat(), hist_base, 2, histSize, ranges, true, false );
 	hist_base.copyTo(bagOfSuperPixel.at(i).hist_orig);
-    normalize( hist_base, hist_base, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
+    //normalize( hist_base, hist_base, 0, 1, cv::NORM_MINMAX, -1, cv::Mat() );
 	bagOfSuperPixel.at(i).hist_base = hist_base;
 	// double base_base = compareHist( hist_base, hist_base, compare_method );
 }
 /* Compare Histograms */
-double soglia = 1.8;
-bool** sims = new bool*[numlabels+1];
+double soglia = 0.25;
+
+bool** sims = new bool*[numlabels];
 for (int i = 0; i < numlabels; ++i)
-	sims[i] = new bool[numlabels+1];
+	sims[i] = new bool[numlabels];
 for(int kk = 0; kk<numlabels; kk++)
 	for(int qq = 0; qq<numlabels; qq++)
-		sims[kk][qq] = false;
+		sims[kk][qq] = kk==qq;
 
 for(int i=0; i<bagOfSuperPixel.size(); i++){
 		SuperPixel ss = bagOfSuperPixel.at(i);
 		cv::MatND hist_curr = ss.hist_base;
-		for(int j=1; j<ss.nearests.size(); j++){
+		for(int j=0; j<ss.nearests.size(); j++){
 			SuperPixel Near2SS = bagOfSuperPixel.at(ss.nearests.at(j));
-			double val = compareHist(hist_curr, Near2SS.hist_base, CV_COMP_INTERSECT   );
+			double val = compareHist(hist_curr, Near2SS.hist_base, CV_COMP_CORREL );
 			if(val > soglia){
 				sims[ss.label][Near2SS.label] = true;
 				sims[Near2SS.label][ss.label] = true;
-//				bagOfSuperPixel.at(i).similars.push_back(bagOfSuperPixel.at(bagOfSuperPixel.at(i).nearests.at(j)).label);
-//				bagOfSuperPixel.at(bagOfSuperPixel.at(i).nearests.at(j)).similars.push_back(bagOfSuperPixel.at(i).label);
-//				mergeSuperPixel(bagOfSuperPixel.at(i),bagOfSuperPixel.at(bagOfSuperPixel.at(i).nearests.at(j)));
-//				i=0;
-//				j=0;
 		}
 	}
 }
 #endif
 #if 1
-for(int i=0; i<numlabels; i++){
-	for(int j=0; j<numlabels; j++){
-			cout << sims[i][j];
-	}
-}
-
-
-for(int i=0; i<numlabels; i++){
-	cv::Mat rr = cv::Mat::zeros(height,width,CV_8U);
+cv::Mat rr = cv::Mat::zeros(height,width,CV_8U);
+for(int i=0; i<numlabels; i++){	
+	int value = rand() %175+80;
 	for(int j=0; j<numlabels; j++){
 		if(sims[i][j]){
-			int value = rand() %175+80;;
+			sims[i][j] = false;	
 			SuperPixel ss1 = bagOfSuperPixel.at(i);
 			SuperPixel ss2 = bagOfSuperPixel.at(j);
 			for(int k=0; k<ss1.points.size(); k++){
@@ -686,25 +721,19 @@ for(int i=0; i<numlabels; i++){
 				cv::Point p = ss2.points.at(k);
 				rr.at<uchar>(p.y,p.x) = value;			
 			}
-			for(int q=0; q<numlabels; q++){
-				if(sims[q][j]){
-					SuperPixel ss3 = bagOfSuperPixel.at(q);
-					for(int idx=0; idx<ss3.points.size(); idx++){
-						cv::Point p = ss3.points.at(idx);
-						rr.at<uchar>(p.y,p.x) = value;			
-					}
-				}
-			}
+			int id_col = j;
+			int id_row = i;
+			bool isRowScan = false;
+			scanColor(rr, id_col, id_row, sims, numlabels, bagOfSuperPixel, value, isRowScan);
 		}
 	}
-	cv::imshow("abcdef3",rr);
-	cv::waitKey(300);
 }
 
-
+	cv::imshow("abcdef3",rr);
+	cv::waitKey(300);
 #endif
-		cv::imshow("abcdef",img);
-		cv::waitKey(300);
+	cv::imshow("abcdef",img);
+	cv::waitKey(300);
 
 
 /* Show Result */	

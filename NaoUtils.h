@@ -22,6 +22,7 @@
 #define NAOPORT 9559
 #define SAVEPATH "C:\\imgCatt\\"
 using namespace AL;
+using namespace cv;
 class NaoUtils
 {
 
@@ -31,6 +32,7 @@ public:
 	void explore();
 	void writeImages(const std::string& naoIP, const std::string& path);
 	void takeSomePhotos(std::string path);
+	Mat see(ALVideoDeviceProxy );
 
 };
 

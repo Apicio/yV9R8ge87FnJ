@@ -18,6 +18,8 @@
 #include <string>
 #include <algorithm>
 #include <opencv2/opencv.hpp>
+#include "Constants.h"
+#include "detection.h"
 using namespace std;
 
 struct SuperPixel{

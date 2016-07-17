@@ -13,5 +13,6 @@ struct Blob {
 	std::vector<cv::Mat> cuttedImages;
 	cv::Mat originalImage;
 	std::vector<cv::Mat> blobsImage;
+	std::vector<cv::Rect> rectangles;
 };
 
