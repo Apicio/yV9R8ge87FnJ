@@ -4,14 +4,17 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include "Constants.h"
+#include "BlobResult.h"
+#include "opencv2\gpu\gpu.hpp"
 
-#define HEIGH 960
-#define WIDTH 1280
+#define HEIGH 480
+#define WIDTH 640
 #define MAX_AREA 40000
 #define MIN_AREA 5000
 #define RECT_AUGMENT 0.1
-#define SHADOW_THRESH 126
+#define SHADOW_THRESH 80
 #define MEAN_OFFSET
+#define DO_MORPH 0
 
 using namespace std;
 using namespace cv;
@@ -22,10 +25,12 @@ using namespace cv;
  * @param regionsOfInterest Array of ROIs detected
  */
 void detect(Mat image, vector<Mat>& regionsOfInterest);
-void detect2(Mat , vector<Mat>&, vector<Blob>& );
+void detect2(Mat , vector<Mat>&,Blob&);
+void detect3(Mat , vector<Mat>&,Blob&);
 vector<double> computeArea(vector<vector<Point> > contours);
 Mat backgroundRemoval(Mat& img);
 Mat applyMaskBandByBand(Mat mask, vector<Mat> bands);
 Mat sharpening(Mat in, double sigma);
+void imadjust(const Mat1b& src, Mat1b& dst, int tol, Vec2i in, Vec2i out);
 
 #endif // DETECTION_H
