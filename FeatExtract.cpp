@@ -15,13 +15,13 @@ double FeatExtract::Log2( double n )
 std::string FeatExtract::readMeanHueAndMoments(cv::Mat image){
 	std::stringstream s;
     cv::Mat grayImage, hsvImage;
-   
+	cv::Mat resized;
     cvtColor(image, hsvImage, CV_BGR2HSV);
     float meanHue = mean(hsvImage)[0];
-    cv::resize(image,image,cv::Size(200,200),0,0,cv::INTER_LINEAR);
+    cv::resize(image,resized,cv::Size(200,200),0,0,cv::INTER_LINEAR);
 				/*if(i%10==0)
 					imshow(s1.str(),readed);*/
-    cvtColor(image, grayImage, CV_BGR2GRAY);
+    cvtColor(resized, grayImage, CV_BGR2GRAY);
     cv::Moments m = moments(grayImage, false /* use true to binarize */);
     double hu[7];
     HuMoments(m, hu);
@@ -53,8 +53,7 @@ std::string FeatExtract::extractDuringMovement(Blob b, bool toMask){
 	std::stringstream s1;
 	 if(toMask)
 		 img = b.cuttedImages.clone();
-	  imshow("maskd", img);
-	   waitKey(0);
+
 	s1<<readMeanHueAndMoments(img);
 	s1<<readStdDevHue(img);
 	s1<<computeEntropy(img)<<",";
@@ -123,9 +122,9 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
 				/*CALCOLO RAPPORTO FRA BBOX, NB: PRIMA DELLA RESIZE!!!*/
 			//	writer<<readBboxComparasion(readed)<<",";
 
-					writer<<readMeanHueAndMoments(img);
-					writer<<readStdDevHue(img);
-					writer<<computeEntropy(img)<<",";
+					writer<<readMeanHueAndMoments(readed);
+					writer<<readStdDevHue(readed);
+					writer<<computeEntropy(readed)<<",";
 					
 				}else{
 					reader.open(s1.str(),ios::in);

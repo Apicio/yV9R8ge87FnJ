@@ -47,6 +47,7 @@ class ARUCO_EXPORTS Marker : public std::vector< cv::Point2f > {
     float ssize;
     // matrices of rotation and translation respect to the camera
     cv::Mat Rvec, Tvec;
+	
 
     /**
      */

@@ -20,16 +20,16 @@ public class Weka
 
 	public Weka(String model){
 		scRedApple = new SerializedClassifier();
-		scRedApple.setModelFile(new File("..//JavaSrc//TestStruct//mela_rossa.model"));
+		scRedApple.setModelFile(new File("..//JavaSrc//TestStruct//new_rossa.model"));
 
 		scYellowApple = new SerializedClassifier();
-		scYellowApple.setModelFile(new File("..//JavaSrc//TestStruct//mela_gialla.model"));
+		scYellowApple.setModelFile(new File("..//JavaSrc//TestStruct//new_gialla.model"));
 
 		scGlass = new SerializedClassifier();
-		scGlass.setModelFile(new File("..//JavaSrc//TestStruct//bicchiere.model"));
+		scGlass.setModelFile(new File("..//JavaSrc//TestStruct//new_bicchiere.model"));
 
 		scCup = new SerializedClassifier();
-		scCup.setModelFile(new File("..//JavaSrc//TestStruct//tazzina.model"));
+		scCup.setModelFile(new File("..//JavaSrc//TestStruct//new_tazzina.model"));
 
 	}
 
@@ -53,7 +53,7 @@ public class Weka
 				"@attribute entropy numeric\r\n"+
 				"@attribute area numeric\r\n"+
 				"@attribute distance numeric\r\n"+
-				"@attribute class {0, 3}\r\n"+
+				"@attribute class {obj, not_obj}\r\n"+
 				"\r\n"+
 				"@data\r\n"+
 				features;
@@ -63,7 +63,7 @@ public class Weka
 		double tmp[] = new double[2];
 		double currMax = Double.MIN_VALUE;
 		String winner = null;
-		double reject=0.4;
+		double reject=0.6;
 		try {
 			InputStream is = new ByteArrayInputStream(toInstance.getBytes());
 			Instances unlabeled = new Instances(new BufferedReader(new InputStreamReader(is)));
@@ -91,31 +91,35 @@ public class Weka
 			if(count>1){ //COMPETIZIONE: decidiamo a massima probabilità
 				tmp = scRedApple.distributionForInstance(unlabeled.get(0));
 				System.out.print("VETTORE PER MELE ROSSE: "+tmp[0]+" "+tmp[1]);
-				if(tmp[1] >currMax){
-					currMax = tmp[1];
+				if(tmp[0] >currMax && values[0] == 0){
+					currMax = tmp[0];
 					winner = "red";
 				}
 				tmp = scYellowApple.distributionForInstance(unlabeled.get(0));
 				System.out.print("VETTORE PER MELE GIALLE: "+tmp[0]+" "+tmp[1]);
-				if(tmp[1] >currMax){
-					currMax =tmp[1];
+				if(tmp[0] >currMax && values[1] == 0){
+					currMax =tmp[0];
 					winner = "yellow";
 				}
 				tmp = scGlass.distributionForInstance(unlabeled.get(0));
 				System.out.print("VETTORE PER  BICCHIERE: "+tmp[0]+" "+tmp[1]);
-				if(tmp[1]>currMax){
-					currMax=tmp[1];
+				if(tmp[0]>currMax&& values[2] == 0){
+					currMax=tmp[0];
 					winner = "glass";
 				}
 				
 				tmp = scCup.distributionForInstance(unlabeled.get(0));
 				System.out.print("VETTORE PER  TAZZINA: "+tmp[0]+" "+tmp[1]);
-				if(tmp[1]>currMax){
-					currMax=tmp[1];
+				if(tmp[0]>currMax&& values[3] == 0){
+					currMax=tmp[0];
 					winner = "cup";
 				}
-				
+				if(currMax<reject)
+					winner ="none";
 			}
+			
+			
+			
 			else if(count == 1){
 				if(values[0] == 0)
 					winner = "red";
@@ -126,8 +130,7 @@ public class Weka
 				if(values[3] == 0)
 					winner ="cup";
 			}
-			if(currMax<reject)
-					winner ="none";
+			
 
 			System.out.println("CurrMax: " +currMax);
 		

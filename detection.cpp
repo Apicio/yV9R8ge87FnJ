@@ -241,7 +241,6 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 	Mat noBackMask = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
 	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
 	Mat thMasked; Mat thOrig; Mat bwOrig; Mat bwNoBackMask;
-	cout<<kernelEr<<endl;
 	Mat kernelOp = getStructuringElement(MORPH_ELLIPSE,Size(13,13));
 	vector<Mat> BGRbands;  split(img,BGRbands);
 	vector< vector<Point> > contours;

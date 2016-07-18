@@ -9,7 +9,7 @@ TheWalkingNao::TheWalkingNao(){
 	_SharpAmount = 3;
 	_medianBlur = 11;
 	_markSize = 0.2;
-	_invert = false;
+	_invert = true;
 /* Init */
 	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
 	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
@@ -47,15 +47,16 @@ TheWalkingNao::TheWalkingNao(){
 	camParams = cam;
 }
 
-void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
+vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 	if(_invert){
 		Mat white(img.size(), img.type(), Scalar(255,255,255));
 		img = white - img;
 	}
+	  vector<Marker> Markers;
     try{
 /* Declaration */
         MarkerDetector MDetector;
-        vector<Marker> Markers;
+      
         Mat grayImage, croppedImage;
 		Mat thresholded = Mat::zeros(img.size(),img.type());
 		Mat toReturn = img.clone();
@@ -69,6 +70,15 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 			Mat sharpened = img*(1+_SharpAmount) + blurred*(-_SharpAmount);
 			img.copyTo(sharpened, lowContrastMask);
 			sharpened.copyTo(img);
+			/*
+			GpuMat blurred, src;
+			src.upload(img);
+			gpu::GaussianBlur(src, blurred, Size(), _SharpSigma, _SharpSigma);
+			GpuMat lowContrastMask = gpu::abs(src - blurred) < _SharpThreshold;
+			GpuMat sharpened = src*(1+_SharpAmount) + blurred*(-_SharpAmount);
+			src.copyTo(sharpened, lowContrastMask);
+			sharpened.copyTo(src);
+			src.download(img);*/
 		}
 #if NAO
 			MDetector.detect(img,Markers,camParams,_markSize,false);	
@@ -117,6 +127,8 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 			Markers[i].draw(img,Scalar(0,0,255),2);
 			CvDrawingUtils u;
 			u.draw3dAxis(img,Markers[i],camParams);
+		
+			cout<<"MARK  "<<Markers[i]<<endl;
 				//TODO:
 				/*Aruco rileva UN solo Marker per ID, è possibile che nella stessa scena vi siano
 				due marker, quindi l'idea è quella di utilizzare la posizione del centroide. Questa
@@ -155,7 +167,9 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 			MDetector.drawLine(img,cand,i);
 		}
 #endif	
+		
     }catch (std::exception &ex){cout<<"Exception :"<<ex.what()<<endl;}
+	return Markers;
 }
 int TheWalkingNao::pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
 {
@@ -209,9 +223,6 @@ double TheWalkingNao::fmax(double element[], int size){
 void TheWalkingNao::init(const char* robotIP){
 	this->motion = new AL::ALMotionProxy(robotIP,PORT); 
 	this->robotPosture = new AL::ALRobotPostureProxy(robotIP,PORT);
-	
-
-	
 }
 void TheWalkingNao::standUp() {
 	/* required position before moving */
@@ -221,18 +232,28 @@ void TheWalkingNao::standUp() {
  void TheWalkingNao::moveLeft(float meters,double angle) {
  	/* moves to the left, rotating torso 90 deg. counter-clockwise */
 	motion->moveTo(0,0,angle);
- 	motion->post.moveTo(meters, 0, 0);
+ 	motion->moveTo(meters, 0, 0);
  }
  
  void TheWalkingNao::moveRight(float meters,double angle) {
  	/* moves to the right, rotating torso 90 deg. clockwise */
 	motion->moveTo(0, 0, -angle);
- 	motion->post.moveTo(meters, 0, 0);
+ 	motion->moveTo(meters, 0, 0);
  }
  
  void TheWalkingNao::moveForward(float meters) {
  	/* moves forward, without torso rotation */
- 	motion->post.moveTo(meters, 0, 0);
+	 motion->moveTo(meters, 0, 0);//{ {"MaxStepX",0.02} , {"MaxStepY",0.101} });
+ }
+
+ void TheWalkingNao::moveOnX(float meters){
+	 motion->moveTo(0, meters, 0);
+ }
+ void TheWalkingNao::rotate(float angle){
+	 motion->moveTo(0, 0, angle);
+ }
+ void TheWalkingNao::walk(float X, float Y){
+	 motion->moveTo(X,Y,0);
  }
 
   void TheWalkingNao::restNow() {
@@ -242,8 +263,56 @@ void TheWalkingNao::standUp() {
 bool TheWalkingNao::isMoving(){
 	return motion->moveIsActive();
 }
-  
 
+
+
+ void TheWalkingNao::moveNearMarker(Mat img){
+	double angle = 0;
+	double distY = 0; 
+	double distX = 0;
+	int d = 0;
+	int heigh = 0;
+	vector<Marker> markers ;
+	/*Becca il marker*/
+	/*Vai avanti finché non scompare salvando l'angolo*/
+	/*ruota dell'angolo che hai ottenuto*/
+	do{		
+		markers = ArucoFind(img,angle,false);
+		
+		if( markers.size() != 0){
+			cout<<markers[0].getCenter()<<endl;
+			heigh = markers[0].getPerimeter()/4; //supponiamo mm
+		}
+		distX = markers.size() != 0 ? ( markers[0].getCenter().x - WIDTH/2 ) : distX*0.8; 
+	/*	distY = markers.size() != 0 ?( HEIGH - markers[0].getCenter().y) : distY*0.6;*/
+		distY = (0.69*200*480)/(heigh*2.46); //in mm
+		
+		cout<<"distY: "<< distY<<"HEIGH: "<<heigh<<endl;
+		
+		walk(distY/1000,distX/2000);
+				
+		cout<<"distX: "<<distX<<endl;
+		cout<<markers.size()<<endl;
+		if(cv::waitKey(1) == 'e')
+			break;
+		if(angle>0)
+				angle-=90;
+		cout<<"angle"<<angle-90<<endl;
+		rotate((angle/180)*3.14);
+		break;
+
+		/*if(distY < 50){ //Siamo sul marker
+			cout<<"angle"<<angle<<endl;
+			if(angle>0)
+				angle-=90;
+			rotate((angle/180)*3.14);
+			break;
+		}*/
+
+		//moveForward(distY/2000);	
+	}while(true);
+ }
+ 
 
 
 TheWalkingNao::~TheWalkingNao(void){}
