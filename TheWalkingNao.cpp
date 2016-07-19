@@ -63,12 +63,14 @@ TheWalkingNao::TheWalkingNao(){
 	camParams = cam;
 }
 
+static vector<Marker> OldMarkers;
 vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 	if(_invert){
 		Mat white(img.size(), img.type(), Scalar(255,255,255));
 		img = white - img;
 	}
 	  vector<Marker> Markers;
+	  CvDrawingUtils u;
     try{
 /* Declaration */
         MarkerDetector MDetector;
@@ -86,15 +88,6 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 			Mat sharpened = img*(1+_SharpAmount) + blurred*(-_SharpAmount);
 			img.copyTo(sharpened, lowContrastMask);
 			sharpened.copyTo(img);
-			/*
-			GpuMat blurred, src;
-			src.upload(img);
-			gpu::GaussianBlur(src, blurred, Size(), _SharpSigma, _SharpSigma);
-			GpuMat lowContrastMask = gpu::abs(src - blurred) < _SharpThreshold;
-			GpuMat sharpened = src*(1+_SharpAmount) + blurred*(-_SharpAmount);
-			src.copyTo(sharpened, lowContrastMask);
-			sharpened.copyTo(src);
-			src.download(img);*/
 		}
 /*			if(_ImageSharp){
 			GpuMat blurred, src, dest, sharpened;
@@ -135,6 +128,7 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}
 			}
 #if NAO
+/*
 			cvtColor(img,thresholded,CV_BGR2GRAY);
 			threshold(thresholded, thresholded,220,255,THRESH_BINARY);
 			Size s = thresholded.size();
@@ -158,9 +152,9 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}	
 			}
 			drawContours(toReturn,contours,minContour,Scalar(0,0,0),CV_FILLED);
-			
+*/		
 			Markers[i].draw(img,Scalar(0,0,255),2);
-			CvDrawingUtils u;
+			
 			u.draw3dAxis(img,Markers[i],camParams);		
 			cout<<"MARK  "<<Markers[i]<<endl;
 				//TODO:
@@ -169,42 +163,75 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				cosa è da fare se e solo se abbiamo il problema del rilevamento fra più marker*/
 				//if(Markers[i].id == 136)
 			angle = computeAngle(Markers[i],camParams);
-			cout << Markers[i].id <<" "<< camParams.getCameraLocation(Markers[i].Rvec,Markers[i].Tvec) << endl;
-			u.draw3dAxis(img,Markers[i],camParams);
-			imshow("m",img);
 #else
 			Markers[i].draw(img,Scalar(0,0,255),2);
 #endif					
 		}
 #if NAO
+		for(int i=Markers.size()-1;i>=0;i--){
+			for(int k=OldMarkers.size()-1;k>=0;k--){
+				Point mC = Markers[i].getCenter();
+				Point mO = OldMarkers[k].getCenter();
+				if(cv::norm(mC-mO) < 10)
+					OldMarkers.erase (OldMarkers.begin()+k);
+			}
+		}
 		vector<std::vector<cv::Point2f> > candidates = MDetector.getCandidates();
-		for(unsigned int kk = candidates.size()-1; kk>=0 && Markers.size() !=0; kk--){
+		vector<Marker> trackMarkers;
+		vector<Point> centroids;
+		for(int kk = candidates.size()-1; kk>=0 && Markers.size() !=0; kk--){
 			std::vector<cv::Point2f> candidate =  candidates.at(kk);
 			Point cent(0,0);
-			for(unsigned int ii = 0; ii<candidate.size(); ii++){
+			for(int ii = 0; ii<candidate.size(); ii++){
 				cent.x += candidate.at(ii).x;
 				cent.y += candidate.at(ii).y;
 			}
 
 			cent.x /=4;
 			cent.y /=4;
-			for(unsigned int i=0;i<Markers.size();i++){
+			for(int i=0;i<Markers.size();i++){
 				if(cv::norm((Point)Markers[i].getCenter()-cent) < 10){
 					candidates.erase (candidates.begin()+kk);
-					break;
+				}else{
+					centroids.insert(centroids.begin(), cent);
 				}
 			}
-		} 
+		}
+		for(int i=0; i<centroids.size();i++){
+			int distance = INT_MAX;
+			int idx = 0;
+			int kdx = 0;
+			for(unsigned int k=0; k<OldMarkers.size();k++){
+				int eu_dist = cv::norm(centroids[i]-(Point)OldMarkers[k].getCenter());
+				if(eu_dist < distance){
+					idx = i;
+					kdx = k;
+					distance = eu_dist;
+				}
+			}
+				if(distance < 100){
+/*					for(int ii = 0; ii<4; ii++){
+						for(int jj = 0; jj<4; jj++){
+
+						}
+					}*/
+					Marker m = Marker(OldMarkers[k]);
+					trackMarkers.push_back(m);
+					u.draw3dAxis(img,m,camParams);
+				}
+		}
+		
+			imshow("aaaa",img);
+			waitKey(700);
+
+
+
 		for(int i=0; i<candidates.size(); i++){
 			MDetector.drawLine(img,candidates,i);
 		}
-
-		vector<std::vector<cv::Point2f> > cand = MDetector.getCandidates();
-		for(int i=0; i<cand.size(); i++){
-			MDetector.drawLine(img,cand,i);
-		}
 #endif	
-		
+	OldMarkers.clear();
+	OldMarkers = Markers;	
     }catch (std::exception &ex){cout<<"Exception :"<<ex.what()<<endl;}
 	return Markers;
 }
