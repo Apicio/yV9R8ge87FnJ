@@ -9,12 +9,13 @@
 //#define HEIGHT 640 /* Do Not Change, this is for CamParams*/
 
 struct Blob {
-	std::vector<double> area;
-	std::vector<cv::Point> centroid;
-	std::vector<double> distance;
-	std::vector<cv::Mat> cuttedImages;
-	cv::Mat originalImage;
-	std::vector<cv::Mat> blobsImage;
-	std::vector<cv::Rect> rectangles;
+	double area;
+	cv::Point centroid;
+	double distance;
+	cv::Mat cuttedImages;
+	cv::Mat* originalImage;
+	cv::Mat blobsImage;
+	cv::Mat cuttedWithBack;
+	cv::Rect rectangles;
 };
 

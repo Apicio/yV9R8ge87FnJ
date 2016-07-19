@@ -367,5 +367,5 @@ void Marker::fromStream(istream &str){
     str.read((char*)Tvec.ptr<float>(0),3*sizeof(float));
 
 }
-
+ 
 }

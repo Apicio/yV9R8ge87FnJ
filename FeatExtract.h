@@ -31,7 +31,7 @@ public:
 	* @return The class label, or 0 for rejection
 	*/
 	void extract(std::vector<string> pathToDir, std::string pathToFile, std::vector<string> types,bool toMask);
-	std::string FeatExtract::extractDuringMovement(Blob, int,  bool);
+	std::string FeatExtract::extractDuringMovement(Blob,  bool);
 	std::string readMeanHueAndMoments(cv::Mat image);
 	std::string readStdDevHue(cv::Mat image);
 	double computeEntropy(cv::Mat );

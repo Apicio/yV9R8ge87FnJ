@@ -15,9 +15,13 @@ double FeatExtract::Log2( double n )
 std::string FeatExtract::readMeanHueAndMoments(cv::Mat image){
 	std::stringstream s;
     cv::Mat grayImage, hsvImage;
-    cvtColor(image, grayImage, CV_BGR2GRAY);
+	cv::Mat resized;
     cvtColor(image, hsvImage, CV_BGR2HSV);
     float meanHue = mean(hsvImage)[0];
+    cv::resize(image,resized,cv::Size(200,200),0,0,cv::INTER_LINEAR);
+				/*if(i%10==0)
+					imshow(s1.str(),readed);*/
+    cvtColor(resized, grayImage, CV_BGR2GRAY);
     cv::Moments m = moments(grayImage, false /* use true to binarize */);
     double hu[7];
     HuMoments(m, hu);
@@ -42,23 +46,18 @@ std::string FeatExtract::readStdDevHue(cv::Mat image){
 L'idea è che la detection ritorna la struttura Blob popolata con tutte le informazioni utili all'estrazione delle features. Ovviamente
 noi dobbiamo estrarre le features da ogni singolo oggetto che abbiamo estratto, quindi currIdx serve per selezionare l'iesimo oggetto.
 */
-std::string FeatExtract::extractDuringMovement(Blob b, int currIdx, bool toMask){
-	cv::Mat img = b.originalImage.clone();
-	 cv::Mat mask;
-	 vector<Mat> bands;
-	 std::stringstream s1;
-	 if(toMask){
-	   mask = backgroundRemoval(img);
-	   split(img,bands);
-	   img = applyMaskBandByBand(mask,bands);
-	 }
-	cv::resize(img,img,cv::Size(200,200),0,0,cv::INTER_LINEAR);
-				/*if(i%10==0)
-					imshow(s1.str(),readed);*/
+std::string FeatExtract::extractDuringMovement(Blob b, bool toMask){
+	cv::Mat img =(b.cuttedWithBack).clone();
+	cv::Mat mask;
+	vector<Mat> bands;
+	std::stringstream s1;
+	 if(toMask)
+		 img = b.cuttedImages.clone();
+
 	s1<<readMeanHueAndMoments(img);
 	s1<<readStdDevHue(img);
 	s1<<computeEntropy(img)<<",";
-	s1<<b.area[currIdx]<<","<<b.distance[currIdx]<<",";
+	s1<<b.area<<","<<b.distance<<",";
 	s1<<"?"; //per Weka
 	return s1.str();
 }
@@ -123,12 +122,9 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
 				/*CALCOLO RAPPORTO FRA BBOX, NB: PRIMA DELLA RESIZE!!!*/
 			//	writer<<readBboxComparasion(readed)<<",";
 
-					cv::resize(readed,img,cv::Size(200,200),0,0,cv::INTER_NEAREST); //NB: INTER_NEAREST o INTER_LINEAR
-				/*if(i%10==0)
-					imshow(s1.str(),readed);*/
-					writer<<readMeanHueAndMoments(img);
-					writer<<readStdDevHue(img);
-					writer<<computeEntropy(img)<<",";
+					writer<<readMeanHueAndMoments(readed);
+					writer<<readStdDevHue(readed);
+					writer<<computeEntropy(readed)<<",";
 					
 				}else{
 					reader.open(s1.str(),ios::in);

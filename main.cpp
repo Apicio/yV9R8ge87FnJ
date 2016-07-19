@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 	for(int i=1;i<121;i++){
 		stringstream img_file;
 		vector<Mat> rectangles;
-		Blob blob;
+		vector<Blob> blob;
 		img_file<<"DATASET_18_07\\im ("<<i<<").jpg"; // 12 28 42
 		cout << img_file.str() << endl;
 		image = imread(img_file.str(),  IMREAD_COLOR);

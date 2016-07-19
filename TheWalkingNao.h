@@ -52,13 +52,17 @@ private:
 public:
 	
 	TheWalkingNao();
-	void ArucoFind(Mat img, double& angle,bool toRemoveMarkers);
+	vector<Marker> ArucoFind(Mat img, double& angle,bool toRemoveMarkers);
+	void TheWalkingNao::moveNearMarker(Mat img);
 	void standUp();
 	void moveLeft(float meters,double angle);
 	void moveRight(float meters, double angle);
 	void moveForward(float meters);
+	void rotate(float angle);
 	void restNow();
 	bool isMoving();
+	 void moveOnX(float meters);
+	 void walk(float X, float Y);
 	void init(const char* robotIP);
 	~TheWalkingNao(void);
 };
