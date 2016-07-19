@@ -8,6 +8,7 @@ vector<double> computeArea(vector<vector<Point> > contours){
 		vector<Point> row = contours.at(i);
 		double area = contourArea(row);
 		toret.push_back(area);
+		
 	}
 	return toret;
 }
@@ -98,7 +99,7 @@ Mat backgroundRemoval(Mat& img){
 	Mat imgHSV; Mat HSVbands[3]; Mat toRet = img.clone(); Mat mask1,mask2,maskTOT;
 	cvtColor(img,imgHSV,CV_BGR2HSV);
 	split(imgHSV,HSVbands);
-	mask1 = HSVbands[0] <= 90/2;
+	mask1 = HSVbands[0] <= 70/2;
 	mask2 = HSVbands[0] >= 270/2;
 	//bitwise_and(mask1,mask2,maskTOT);
 	maskTOT = mask1 + mask2;
@@ -277,6 +278,8 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 #else
 	morph = masked;
 #endif
+	imshow("masked",masked);
+	
 	/*Ricerca componenti connesse e rimozione in base all'area*/
 	cvtColor(morph,bwmorph,CV_BGR2GRAY);
 	findContours(bwmorph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
@@ -337,9 +340,9 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 	//out = out+cont;
 	bitwise_xor(out,cont,out);
 	
-/*	imshow("img",img);
+	imshow("img",img);
 	imshow("out",out);
-	waitKey(0);*/
+	waitKey(0);
 }
 
 
