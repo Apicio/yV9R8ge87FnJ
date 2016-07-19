@@ -19,12 +19,14 @@
 #include <alproxies/alvideodeviceproxy.h>
 #include <alvision/alimage.h>
 #include <alvision/alvisiondefinitions.h>
+#include <opencv2\gpu\gpu.hpp>
 
 #define PORT 9559
 
 using namespace cv;
 using namespace aruco;
 using namespace AL;
+using namespace gpu;
 
 enum Direction {NORTH,SOUTH,WEST,OVEST, NORTHWEST,SOUTHWEST,SOUTHOVEST,NORDOVEST };
 class TheWalkingNao

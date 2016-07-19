@@ -4,14 +4,14 @@
 TheWalkingNao::TheWalkingNao(){
 /* Configuration */
 	_ImageSharp = true;
-	_SharpSigma = 5;
+	_SharpSigma = 20;
 	_SharpThreshold = 5;
 	_SharpAmount = 3;
 	_medianBlur = 11;
-	_markSize = 0.2;
+	_markSize = 0.105;
 	_invert = false;
 /* Init */
-	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
+/*	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
 	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
 		cameraMatrix.at<float>(0,0)=1406.9968064577436;
 	cameraMatrix.at<float>(0,1)=0;
@@ -42,6 +42,22 @@ TheWalkingNao::TheWalkingNao(){
 	distorsionCoeff.at<float>(2,0)=0.0038281538281731;
 	distorsionCoeff.at<float>(3,0)=-0.00551104078371959;
 	distorsionCoeff.at<float>(4,0)=0;*/
+	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
+	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
+	cameraMatrix.at<float>(0,0)=1.2013236249865872e+003;
+	cameraMatrix.at<float>(0,1)=0;
+	cameraMatrix.at<float>(0,2)=3.1950000000000000e+002;
+	cameraMatrix.at<float>(1,0)=0;
+	cameraMatrix.at<float>(1,1)=1.2013236249865872e+003;
+	cameraMatrix.at<float>(1,2)=2.3950000000000000e+002;
+	cameraMatrix.at<float>(2,0)=0;
+	cameraMatrix.at<float>(2,1)=0;
+	cameraMatrix.at<float>(2,2)=1;
+	distorsionCoeff.at<float>(0,0)=1.8523503367065681e+000;
+	distorsionCoeff.at<float>(1,0)=-2.5020691022262803e+001;
+	distorsionCoeff.at<float>(2,0)=0;
+	distorsionCoeff.at<float>(3,0)=0;
+	distorsionCoeff.at<float>(4,0)=3.0809776264102879e+002;
 	Size resolution(WIDTH,HEIGHT);
 	CameraParameters cam(cameraMatrix, distorsionCoeff, resolution);
 	camParams = cam;
@@ -70,6 +86,25 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 			img.copyTo(sharpened, lowContrastMask);
 			sharpened.copyTo(img);
 		}
+/*			if(_ImageSharp){
+			GpuMat blurred, src, dest, sharpened;
+			Mat lowCM, ssharp, srcMat;
+
+			src.upload(img);
+			gpu::GaussianBlur(src, blurred, Size(), _SharpSigma, _SharpSigma);
+			GpuMat lowContrastMask;
+			gpu::absdiff(src,blurred,lowContrastMask);
+			gpu::multiply(src, (1+_SharpAmount), src);
+			gpu::multiply(blurred, (-_SharpAmount), blurred);
+			gpu::add(src, blurred, sharpened); 		
+			lowContrastMask.download(lowCM);
+			sharpened.download(ssharp);
+			src.download(srcMat);
+
+			lowCM = lowCM < _SharpThreshold;
+			srcMat.copyTo(ssharp, lowCM);
+			ssharp.copyTo(img);
+		}*/
 #if NAO
 			MDetector.detect(img,Markers,camParams,_markSize,false);	
 #else
@@ -116,13 +151,17 @@ void TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 			
 			Markers[i].draw(img,Scalar(0,0,255),2);
 			CvDrawingUtils u;
-			u.draw3dAxis(img,Markers[i],camParams);
+
+			waitKey(0);
 				//TODO:
 				/*Aruco rileva UN solo Marker per ID, è possibile che nella stessa scena vi siano
 				due marker, quindi l'idea è quella di utilizzare la posizione del centroide. Questa
 				cosa è da fare se e solo se abbiamo il problema del rilevamento fra più marker*/
 				//if(Markers[i].id == 136)
-					angle = computeAngle(Markers[i],camParams);
+			angle = computeAngle(Markers[i],camParams);
+			cout << Markers[i].id <<" "<< camParams.getCameraLocation(Markers[i].Rvec,Markers[i].Tvec) << endl;
+			u.draw3dAxis(img,Markers[i],camParams);
+			imshow("m",img);
 #else
 			Markers[i].draw(img,Scalar(0,0,255),2);
 #endif					

@@ -34,6 +34,63 @@ Mat detectShadows(Mat img){
 	return maskHSV;
 }
 
+double getThreshVal_Otsu_8u( const cv::Mat& _src )
+{
+    cv::Size size = _src.size();
+    if ( _src.isContinuous() )
+    {
+        size.width *= size.height;
+        size.height = 1;
+    }
+    const int N = 256;
+    int i, j, h[N] = {0};
+    for ( i = 0; i < size.height; i++ )
+    {
+        const uchar* src = _src.data + _src.step*i;
+        for ( j = 0; j <= size.width - 4; j += 4 )
+        {
+            int v0 = src[j], v1 = src[j+1];
+            h[v0]++; h[v1]++;
+            v0 = src[j+2]; v1 = src[j+3];
+            h[v0]++; h[v1]++;
+        }
+        for ( ; j < size.width; j++ )
+            h[src[j]]++;
+    }
+
+    double mu = 0, scale = 1./(size.width*size.height);
+    for ( i = 0; i < N; i++ )
+        mu += i*h[i];
+
+    mu *= scale;
+    double mu1 = 0, q1 = 0;
+    double max_sigma = 0, max_val = 0;
+
+    for ( i = 0; i < N; i++ )
+    {
+        double p_i, q2, mu2, sigma;
+
+        p_i = h[i]*scale;
+        mu1 *= q1;
+        q1 += p_i;
+        q2 = 1. - q1;
+
+        if ( std::min(q1,q2) < FLT_EPSILON || std::max(q1,q2) > 1. - FLT_EPSILON )
+            continue;
+
+        mu1 = (mu1 + i*p_i)/q1;
+        mu2 = (mu - q1*mu1)/q2;
+        sigma = q1*q2*(mu1 - mu2)*(mu1 - mu2);
+        if ( sigma > max_sigma )
+        {
+            max_sigma = sigma;
+            max_val = i;
+        }
+    }
+
+    return max_val;
+}
+
 void imadjust(const Mat1b& src, Mat1b& dst, int tol = 1, Vec2i in = Vec2i(0, 255), Vec2i out = Vec2i(0, 255))
 {
     // src : input CV_8UC1 image
@@ -214,6 +271,7 @@ Mat computeWhiteMaskShadow(Mat& img)
 	bitwise_and(maskR,maskD,maskD);
 	bitwise_and(maskB,maskR,maskT);
 	bitwise_or(maskD,maskT,maskT);
+
 	findContours(maskT, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 	vector<double> areas = computeArea(contours);
 	for(int j = areas.size()-1; j>=0; j--){
@@ -225,6 +283,84 @@ Mat computeWhiteMaskShadow(Mat& img)
 		drawContours(out, contours, idx, Scalar(255,255,255), CV_FILLED, 8);
 	return out;
  }
+
+CBlobResult computeWhiteMaskOtsu(Mat& imgRGBin, Mat& imgHSVIn, CBlobResult& blobs, int limitRGB, int limitHSV, double RGBratio, double HSVratio, int bmin, int bmax, int i){
+	waitKey(30);
+	Mat BGRbands[3];  
+	split(imgRGBin,BGRbands);
+	Mat imgHSV;
+	cvtColor(imgHSVIn,imgHSV,CV_BGR2HSV);
+	Mat HSVbands[3];  
+	split(imgHSV,HSVbands);
+	Mat maskHSV, maskRGB, maskT;
+
+	int otsuTRGB = getThreshVal_Otsu_8u(BGRbands[2]);
+	do{
+		threshold(BGRbands[2],maskRGB,otsuTRGB,255,THRESH_BINARY);
+		otsuTRGB++;
+	}while(countNonZero(maskRGB)>(RGBratio*limitRGB) & otsuTRGB<=255);
+	int otsuTHSV = getThreshVal_Otsu_8u(HSVbands[1]);
+	do{	
+		threshold(HSVbands[1],maskHSV,otsuTHSV,255,THRESH_BINARY_INV);
+		otsuTHSV--;
+	}while(countNonZero(maskHSV)>(HSVratio*limitHSV) & otsuTHSV>=0); // 0.1
+	bitwise_or(maskHSV,maskRGB,maskT);
+	int blobSizeBefore = blobs.GetNumBlobs();
+    blobs = blobs + CBlobResult( maskT ,Mat(),8);
+	blobs.Filter( blobs, B_EXCLUDE, CBlobGetLength(), B_GREATER, bmax );
+	blobs.Filter( blobs, B_EXCLUDE, CBlobGetLength(), B_LESS, bmin );
+	int blobSizeAfter = blobs.GetNumBlobs();
+	Mat newMask(maskT.size(),maskT.type());
+    newMask.setTo(0);
+    for(;i<blobs.GetNumBlobs();i++){
+		double area = blobs.GetBlob(i)->Area();
+		if(area < 5000 && area > 400)
+			blobs.GetBlob(i)->FillBlob(newMask,CV_RGB(255,255,255),0,0,true);
+    }
+	if(countNonZero(maskRGB)>400 && countNonZero(maskHSV)>400 && blobSizeBefore!=blobSizeAfter){
+		vector<Mat> BGRbands;  split(imgRGBin,BGRbands);
+		Mat maskedRGB = applyMaskBandByBand(newMask,BGRbands);
+		bitwise_not(newMask,newMask);
+		split(imgHSVIn,BGRbands);
+		Mat maskedHSV = applyMaskBandByBand(newMask,BGRbands);
+		blobs = computeWhiteMaskOtsu(maskedRGB, maskedHSV, blobs, countNonZero(maskRGB),countNonZero(maskHSV),RGBratio, HSVratio, bmin, bmax, i-1);
+	}		
+	return blobs;
+}
+void rgb2cmyk(cv::Mat& img, std::vector<cv::Mat>& cmyk) {
+    // Allocate cmyk to store 4 componets
+    for (int i = 0; i < 4; i++) {
+        cmyk.push_back(cv::Mat(img.size(), CV_8UC1));
+    }
+
+    // Get rgb
+    std::vector<cv::Mat> rgb;
+    cv::split(img, rgb);
+
+    // rgb to cmyk
+    for (int i = 0; i < img.rows; i++) {
+        for (int j = 0; j < img.cols; j++) {
+            float r = (int)rgb[2].at<uchar>(i, j) / 255.;
+            float g = (int)rgb[1].at<uchar>(i, j) / 255.;
+            float b = (int)rgb[0].at<uchar>(i, j) / 255.;
+            float k = std::min(std::min(1- r, 1- g), 1- b);         
+ 
+            cmyk[0].at<uchar>(i, j) = (1 - r - k) / (1 - k) * 255.;
+            cmyk[1].at<uchar>(i, j) = (1 - g - k) / (1 - k) * 255.;
+            cmyk[2].at<uchar>(i, j) = (1 - b - k) / (1 - k) * 255.;
+            cmyk[3].at<uchar>(i, j) = k * 255.;
+        }
+    }
+}
+
+Mat computeInterest(Mat& img){
+	std::vector<cv::Mat> cmyk;
+	rgb2cmyk(img, cmyk);
+	int otsuT = getThreshVal_Otsu_8u(cmyk.at(2));
+	Mat out;
+	threshold(cmyk.at(2),out,otsuT,255,THRESH_BINARY);
+	return img;
+}
 
 void detect2(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
 	/*************INIZIALIZZAZIONI**********/
@@ -256,19 +392,30 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
 	/*Rimozione sfondo e sogliatura per videnziare esclusivamente ciò che è bianco*/
 	noBackMask = backgroundRemoval(img);
 	masked = applyMaskBandByBand(noBackMask,BGRbands);
+/*
 	whiteMaskOrig = computeWhiteMaskLight(img);
 	whiteMaskOrig = whiteMaskOrig + computeWhiteMaskShadow(img);
 
 	whiteMaskMasked = computeWhiteMaskLight(masked);
 	whiteMaskMasked = whiteMaskMasked + computeWhiteMaskShadow(masked);
-
-	thOrig = whiteMaskOrig-whiteMaskMasked; //Stiamo estraendo tutto il bianco dall'immagine originale che è stato perso nella mascheratura
-	vector<Mat> multiThOrig; multiThOrig.push_back(thOrig); multiThOrig.push_back(thOrig); multiThOrig.push_back(thOrig);
-	Mat origReplicTh =  Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	merge(multiThOrig,origReplicTh);
-
-	/*Ora che abbiamo evidenziato le cose bianche, possiamo sommare all'immagine mascherata originale in modo da riottenere le mele*/
-	masked = masked + origReplicTh;
+	*/
+	computeInterest(img);
+	CBlobResult blobs;
+	blobs = computeWhiteMaskOtsu(img, img, blobs, img.rows*img.cols, img.rows*img.cols, 0.8, 0.8, 30, 200, 0);
+	Mat newimg(img.size(),img.type());
+    newimg.setTo(0);
+    for(int i=0;i<blobs.GetNumBlobs();i++){
+		double area = blobs.GetBlob(i)->Area();
+		 if(area < 10000 && area > 400)
+			 blobs.GetBlob(i)->FillBlob(newimg,CV_RGB(255,255,255),0,0,true);
+    }
+	imshow("aaaaaa",newimg);
+	waitKey(300);
+	threshold(masked,whiteMaskMasked,0,255,THRESH_BINARY);
+	cvtColor(whiteMaskMasked,whiteMaskMasked,CV_BGR2GRAY);
+		cout << whiteMaskMasked.type() << " " << whiteMaskOrig.type() << endl;
+	bitwise_or(whiteMaskMasked,whiteMaskOrig,thOrig);
+	masked = applyMaskBandByBand(thOrig,BGRbands);
 #if DO_MORPH
 	/*Operazioni morfologiche per poter riempire i buchi e rimuovere i bordi frastagliati*/
 	dilate(masked,morph,kernelEr);
@@ -279,7 +426,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
 #else
 	morph = masked;
 #endif
-
+	
 	/*Ricerca componenti connesse e rimozione in base all'area*/
 	cvtColor(morph,bwmorph,CV_BGR2GRAY);
 	findContours(bwmorph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
@@ -380,8 +527,7 @@ void detect3(Mat img, vector<Mat>& regionsOfInterest,Blob& blob){
 	Canny( src_gray, detected_edges, lowThreshold, max_lowThreshold, kernel_size, true );
 	/*Operazioni morfologiche per poter riempire i buchi e rimuovere i bordi frastagliati*/
 	findContours(detected_edges, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-	dilate(detected_edges,detected_edges,kernelEr);
-	erode(detected_edges,detected_edges,kernelEr);
+
 
 	imshow("or",img);
 	waitKey(0);
