@@ -489,6 +489,31 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 	waitKey(0);*/
 }
 
+/* Computes a bounding rectangle for the object according to its borders */
+Rect refitToBorders(Mat region) {
+    Mat img;
+    cvtColor(region, img, CV_BGR2HSV);
+    medianBlur(img, img, 11);
+    Laplacian(img, img, -1, 3);
+    Canny(img, img, 100, 200);
+    int minX = img.cols, maxX = 0, minY = img.rows, maxY = 0;
+    for (size_t x = 0; x < img.cols; x++) {
+        for (size_t y = 0; y < img.rows; y++) {
+            if (!img.at<uchar>(y, x))
+                continue;
+            if (x < minX)
+               minX = x;
+            if (x > maxX)
+               maxX = x;
+            if (y < minY)
+               minY = y;
+            if (y > maxY)
+               maxY = y;
+        }
+    }
+    return Rect(Point(minX, minY), Point(maxX, maxY));
+}
+
 //void detect(Mat img, vector<Mat>& regionsOfInterest){
 //	/*************INIZIALIZZAZIONI**********/
 //	Mat gray, hist;
