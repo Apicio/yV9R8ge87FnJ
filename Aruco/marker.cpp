@@ -116,9 +116,7 @@ Marker::Marker(const std::vector< cv::Point2f > &corners, const Marker &M) : std
 		(*this)[1].x = (*this)[1].x-x_dist;
 		(*this)[2].x = (*this)[2].x-x_dist;
 		(*this)[3].x = (*this)[3].x-x_dist;
-	}
-	
-
+	}	
 }
 
 /**
