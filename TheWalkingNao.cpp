@@ -64,6 +64,9 @@ TheWalkingNao::TheWalkingNao(){
 }
 
 static vector<Marker> OldMarkers;
+bool sort_fun_minus(Marker a, Marker b){
+	return a.getCenter().y < b.getCenter().y;
+}
 vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 	if(_invert){
 		Mat white(img.size(), img.type(), Scalar(255,255,255));
@@ -152,11 +155,9 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}	
 			}
 			drawContours(toReturn,contours,minContour,Scalar(0,0,0),CV_FILLED);
+
 */		
-			Markers[i].draw(img,Scalar(0,0,255),2);
-			
-			u.draw3dAxis(img,Markers[i],camParams);		
-			cout<<"MARK  "<<Markers[i]<<endl;
+
 				//TODO:
 				/*Aruco rileva UN solo Marker per ID, è possibile che nella stessa scena vi siano
 				due marker, quindi l'idea è quella di utilizzare la posizione del centroide. Questa
@@ -186,7 +187,6 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				cent.x += candidate.at(ii).x;
 				cent.y += candidate.at(ii).y;
 			}
-
 			cent.x /=4;
 			cent.y /=4;
 			for(int i=0;i<Markers.size();i++){
@@ -197,7 +197,7 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}
 			}
 		}
-		for(int i=0; i<centroids.size();i++){
+		for(int i=centroids.size()-1; i>=0;i--){
 			int distance = INT_MAX;
 			int idx = 0;
 			int kdx = 0;
@@ -210,25 +210,25 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}
 			}
 				if(distance < 100){
-/*					for(int ii = 0; ii<4; ii++){
-						for(int jj = 0; jj<4; jj++){
-
-						}
-					}*/
-					Marker m = Marker(OldMarkers[k]);
-					trackMarkers.push_back(m);
-					u.draw3dAxis(img,m,camParams);
+					Marker m = Marker(candidates.at(i), OldMarkers[k]);
+					candidates.erase (candidates.begin()+i);
+					trackMarkers.push_back(m);		
 				}
 		}
-		
-			imshow("aaaa",img);
-			waitKey(700);
+		// TODO: aggiornare punti, inserire nuovi marker in vettore di output in funzione della direzione
+		for(int i = 0; i<trackMarkers.size(); i++)
+			Markers.push_back(trackMarkers.at(i));
 
-
-
-		for(int i=0; i<candidates.size(); i++){
-			MDetector.drawLine(img,candidates,i);
+		std::sort(Markers.begin(), Markers.end(), sort_fun_minus);
+		for(int i = 0; i<Markers.size(); i++){
+			Markers[i].draw(img,Scalar(0,0,255),2);
+			u.draw3dAxis(img,Markers[i],camParams);	
+			cout<<"MARK  "<<Markers[i]<<endl;
 		}
+						
+
+		imshow("aaaa",img);
+		waitKey(700);
 #endif	
 	OldMarkers.clear();
 	OldMarkers = Markers;	
