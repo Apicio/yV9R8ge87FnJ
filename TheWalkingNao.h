@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "aruco.h"
 #include <vector>
+#include "NaoUtils.h"
 #include <math.h>
 #include "NaoUtils.h"
 // Aldebaran includes.

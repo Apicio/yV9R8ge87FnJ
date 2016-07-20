@@ -6,14 +6,30 @@ TheWalkingNao::TheWalkingNao(){
 	_ImageSharp = true;
 	_SharpSigma = 20;
 	_SharpThreshold = 5;
-	_SharpAmount = 3;
+	_SharpAmount = 1;
 	_medianBlur = 11;
 	_markSize = 0.105;
-	_invert = false;
+	_invert = true;
 /* Init */
-/*	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
+
+	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
 	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
-		cameraMatrix.at<float>(0,0)=1406.9968064577436;
+/*
+	cameraMatrix.at<float>(0,0)=278.236008818534;
+	cameraMatrix.at<float>(0,1)=0;
+	cameraMatrix.at<float>(0,2)=156.194471689706;
+	cameraMatrix.at<float>(1,0)=0;
+	cameraMatrix.at<float>(1,1)=279.380102992049;
+	cameraMatrix.at<float>(1,2)=126.007123836447;
+	cameraMatrix.at<float>(2,0)=0;
+	cameraMatrix.at<float>(2,1)=0;
+	cameraMatrix.at<float>(2,2)=1;
+	distorsionCoeff.at<float>(0,0)=-0.0481869853715082;
+	distorsionCoeff.at<float>(1,0)=0.0201858398559121;
+	distorsionCoeff.at<float>(2,0)=0.0030362056699177;
+	distorsionCoeff.at<float>(3,0)=-0.00172241952442813;
+	distorsionCoeff.at<float>(4,0)=0;*/
+	cameraMatrix.at<float>(0,0)=1406.9968064577436;
 	cameraMatrix.at<float>(0,1)=0;
 	cameraMatrix.at<float>(0,2)=639.5;
 	cameraMatrix.at<float>(1,0)=0;
@@ -27,37 +43,8 @@ TheWalkingNao::TheWalkingNao(){
 	distorsionCoeff.at<float>(2,0)=0;
 	distorsionCoeff.at<float>(3,0)=0;
 	distorsionCoeff.at<float>(4,0)=0.33637972422994983;
-	/*
-	cameraMatrix.at<float>(0,0)=558.570339530768;
-	cameraMatrix.at<float>(0,1)=0;
-	cameraMatrix.at<float>(0,2)=308.885375457296;
-	cameraMatrix.at<float>(1,0)=0;
-	cameraMatrix.at<float>(1,1)=556.122943034837;
-	cameraMatrix.at<float>(1,2)=247.600724811385;
-	cameraMatrix.at<float>(2,0)=0;
-	cameraMatrix.at<float>(2,1)=0;
-	cameraMatrix.at<float>(2,2)=1;
-	distorsionCoeff.at<float>(0,0)=-0.0648763971625288;
-	distorsionCoeff.at<float>(1,0)=0.0612520196884308;
-	distorsionCoeff.at<float>(2,0)=0.0038281538281731;
-	distorsionCoeff.at<float>(3,0)=-0.00551104078371959;
-	distorsionCoeff.at<float>(4,0)=0;*/
-	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
-	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
-	cameraMatrix.at<float>(0,0)=1.2013236249865872e+003;
-	cameraMatrix.at<float>(0,1)=0;
-	cameraMatrix.at<float>(0,2)=3.1950000000000000e+002;
-	cameraMatrix.at<float>(1,0)=0;
-	cameraMatrix.at<float>(1,1)=1.2013236249865872e+003;
-	cameraMatrix.at<float>(1,2)=2.3950000000000000e+002;
-	cameraMatrix.at<float>(2,0)=0;
-	cameraMatrix.at<float>(2,1)=0;
-	cameraMatrix.at<float>(2,2)=1;
-	distorsionCoeff.at<float>(0,0)=1.8523503367065681e+000;
-	distorsionCoeff.at<float>(1,0)=-2.5020691022262803e+001;
-	distorsionCoeff.at<float>(2,0)=0;
-	distorsionCoeff.at<float>(3,0)=0;
-	distorsionCoeff.at<float>(4,0)=3.0809776264102879e+002;
+	
+	
 	Size resolution(WIDTH,HEIGHT);
 	CameraParameters cam(cameraMatrix, distorsionCoeff, resolution);
 	camParams = cam;
@@ -69,16 +56,11 @@ bool sort_fun_minus(Marker a, Marker b){
 	return a.getCenter().y < b.getCenter().y;
 }
 vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
-	if(_invert){
-		Mat white(img.size(), img.type(), Scalar(255,255,255));
-		img = white - img;
-	}
 	  vector<Marker> Markers;
 	  CvDrawingUtils u;
     try{
 /* Declaration */
-        MarkerDetector MDetector;
-      
+        MarkerDetector MDetector;   
         Mat grayImage, croppedImage;
 		Mat thresholded = Mat::zeros(img.size(),img.type());
 		Mat toReturn = img.clone();
@@ -93,25 +75,10 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 			img.copyTo(sharpened, lowContrastMask);
 			sharpened.copyTo(img);
 		}
-/*			if(_ImageSharp){
-			GpuMat blurred, src, dest, sharpened;
-			Mat lowCM, ssharp, srcMat;
-
-			src.upload(img);
-			gpu::GaussianBlur(src, blurred, Size(), _SharpSigma, _SharpSigma);
-			GpuMat lowContrastMask;
-			gpu::absdiff(src,blurred,lowContrastMask);
-			gpu::multiply(src, (1+_SharpAmount), src);
-			gpu::multiply(blurred, (-_SharpAmount), blurred);
-			gpu::add(src, blurred, sharpened); 		
-			lowContrastMask.download(lowCM);
-			sharpened.download(ssharp);
-			src.download(srcMat);
-
-			lowCM = lowCM < _SharpThreshold;
-			srcMat.copyTo(ssharp, lowCM);
-			ssharp.copyTo(img);
-		}*/
+			if(_invert){
+		Mat white(img.size(), img.type(), Scalar(255,255,255));
+		img = white - img;
+	}
 #if NAO
 			MDetector.detect(img,Markers,camParams,_markSize,false);	
 #else
@@ -156,15 +123,12 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}	
 			}
 			drawContours(toReturn,contours,minContour,Scalar(0,0,0),CV_FILLED);
+
 */		
-			Markers[i].draw(img,Scalar(0,0,255),2);
-			
-			u.draw3dAxis(img,Markers[i],camParams);		
-			cout<<"MARK  "<<Markers[i]<<endl;
 				//TODO:
-				/*Aruco rileva UN solo Marker per ID, è possibile che nella stessa scena vi siano
-				due marker, quindi l'idea è quella di utilizzare la posizione del centroide. Questa
-				cosa è da fare se e solo se abbiamo il problema del rilevamento fra più marker*/
+				/*Aruco rileva UN solo Marker per ID, ï¿½ possibile che nella stessa scena vi siano
+				due marker, quindi l'idea ï¿½ quella di utilizzare la posizione del centroide. Questa
+				cosa ï¿½ da fare se e solo se abbiamo il problema del rilevamento fra piï¿½ marker*/
 				//if(Markers[i].id == 136)
 			angle = computeAngle(Markers[i],camParams);
 #else
@@ -381,7 +345,7 @@ bool TheWalkingNao::isMoving(){
 	int heigh = 0;
 	vector<Marker> markers ;
 	/*Becca il marker*/
-	/*Vai avanti finché non scompare salvando l'angolo*/
+	/*Vai avanti finchï¿½ non scompare salvando l'angolo*/
 	/*ruota dell'angolo che hai ottenuto*/
 	int k=0;
 	int a=0;
@@ -523,8 +487,8 @@ bool TheWalkingNao::isMoving(){
 			//this->motion->stopMove();
 			if(C){
 				cout<<"c"<<endl;
-				infinteWalk(0.5, 0); // Muovi in avanti con velocità 0.2
-				// muovi avanti finchè in C
+				infinteWalk(0.5, 0); // Muovi in avanti con velocitï¿½ 0.2
+				// muovi avanti finchï¿½ in C
 				//waitKey(1000);
 			}
 			if(H){
@@ -536,13 +500,13 @@ bool TheWalkingNao::isMoving(){
 			if(A){
 				cout<<"A"<<endl;
 				infiniteRotate(0.2);
-				// ruota in senso antiorario finchè non B
+				// ruota in senso antiorario finchï¿½ non B
 				//waitKey(1000);
 			}
 			if(B){
 				cout<<"B"<<endl;
 				infinteWalk(0, 0.5); 
-				// trasla a sinistra finchè non C
+				// trasla a sinistra finchï¿½ non C
 				//waitKey(1000);
 			}
 			if(L){
@@ -560,13 +524,13 @@ bool TheWalkingNao::isMoving(){
 			if(E){
 				cout<<"E"<<endl;
 				infiniteRotate(-0.2);
-				// ruota in senso orario finchè non D
+				// ruota in senso orario finchï¿½ non D
 				//waitKey(1000);
 			}
 			if(D){
 				cout<<"D"<<endl;
 				infinteWalk(0, -0.5);
-				// trasla a destra finchè non C
+				// trasla a destra finchï¿½ non C
 				//waitKey(1000);
 			}
 			if(F){
