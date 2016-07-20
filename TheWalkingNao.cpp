@@ -284,30 +284,33 @@ void TheWalkingNao::standUp() {
  }
  void TheWalkingNao::walk(float X, float Y){
 	 AL::ALValue val = motion->getMoveConfig("Default");;
-     val[0][1] = 0.020;
-	 val[2][1] = 0.101;
-	 val[3][1] = 0.5;
-	 val[4][1] = 0.010;
+  val[0][1] = 0.020; //DefX
+	 val[2][1] = 0.101; //DefY
+	 val[3][1] = 0.2;   //DefZ
+	 val[4][1] = 0.5;   //Freq
+	 val[7][1] = 0.01;	//MaxHeigh
 	 	 cout<<"CALL"<<endl;
-	 motion->post.moveTo(X,Y,0);//,val);
+	 motion->post.moveTo(X,Y,0,val);
  }
  void TheWalkingNao::infinteWalk(float velX, float velY){
 	 AL::ALValue val = motion->getMoveConfig("Default");;
-     val[0][1] = 0.020;
-	 val[2][1] = 0.101;
-	 val[3][1] = 0.5;
-	 val[4][1] = 0.010;
+    val[0][1] = 0.020; //DefX
+	 val[2][1] = 0.101; //DefY
+	 val[3][1] = 0.2;   //DefZ
+	 val[4][1] = 0.5;   //Freq
+	 val[7][1] = 0.01;	//MaxHeigh
 
-	 motion->post.move(velX,velY,0);//, val);
+	 motion->post.move(velX,velY,0, val);
  }
   void TheWalkingNao::infiniteRotate(float velTheta){
-	 AL::ALValue val = motion->getMoveConfig("Default");;
-     val[0][1] = 0.020;
-	 val[2][1] = 0.101;
-	 val[3][1] = 0.5;
-	 val[4][1] = 0.010;
+	 AL::ALValue val = motion->getMoveConfig("Default");
+     val[0][1] = 0.020; //DefX
+	 val[2][1] = 0.101; //DefY
+	 val[3][1] = 0.2;   //DefZ
+	 val[4][1] = 0.5;   //Freq
+	 val[7][1] = 0.01;	//MaxHeigh
 
-	 motion->post.move(0,0,velTheta);//,val);
+	 motion->post.move(0,0,velTheta,val);
  }
 
 void TheWalkingNao::moveDownNeck(float PitchAngle){

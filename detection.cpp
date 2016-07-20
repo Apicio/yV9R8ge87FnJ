@@ -401,12 +401,9 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 	computeInterest(img);
 	CBlobResult blobsRs;
 	blobsRs = computeWhiteMaskOtsu(img, img, blobsRs, img.rows*img.cols, img.rows*img.cols, 0.8, 0.8, 30, 200, 0);
-	Mat newimg(img.size(),img.type());
-    newimg.setTo(0);
+    whiteMaskOrig.setTo(0);
     for(int i=0;i<blobsRs.GetNumBlobs();i++){
-		double area = blobsRs.GetBlob(i)->Area();
-		 if(area < 10000 && area > 400)
-			 blobsRs.GetBlob(i)->FillBlob(newimg,CV_RGB(255,255,255),0,0,true);
+			 blobsRs.GetBlob(i)->FillBlob(whiteMaskOrig,CV_RGB(255,255,255),0,0,true);
     }
 
 
