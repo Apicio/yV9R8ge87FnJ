@@ -47,6 +47,7 @@ class ARUCO_EXPORTS Marker : public std::vector< cv::Point2f > {
     float ssize;
     // matrices of rotation and translation respect to the camera
     cv::Mat Rvec, Tvec;
+	cv::Point2f cent;
 	
 
     /**
@@ -61,6 +62,7 @@ class ARUCO_EXPORTS Marker : public std::vector< cv::Point2f > {
     /**
      */
     Marker(const std::vector< cv::Point2f > &corners, int _id = -1);
+	Marker(const std::vector< cv::Point2f > &corners, const Marker &M);
     /**
      */
     ~Marker() {}
@@ -105,7 +107,7 @@ class ARUCO_EXPORTS Marker : public std::vector< cv::Point2f > {
 
     /**Returns the centroid of the marker
         */
-    cv::Point2f getCenter() const;
+    cv::Point2f getCenter();
     /**Returns the perimeter of the marker
      */
     float getPerimeter() const;
@@ -114,10 +116,14 @@ class ARUCO_EXPORTS Marker : public std::vector< cv::Point2f > {
     float getArea() const;
     /**compares ids
      */
-    bool operator==(const Marker &m)const{return m.id==id;}
+    bool operator==(const Marker &m)const{
+		return m.id==id;}
     /**
      */
-    friend bool operator<(const Marker &M1, const Marker &M2) { return M1.id < M2.id; }
+
+	friend bool operator<(const Marker &M1, const Marker &M2) { 
+		return M1.id < M2.id; 
+	}
     /**
      */
     friend ostream &operator<<(ostream &str, const Marker &M) {

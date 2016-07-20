@@ -40,6 +40,7 @@ namespace aruco {
 Marker::Marker() {
     id = -1;
     ssize = -1;
+	cent = Point2f(0, 0);
     Rvec.create(3, 1, CV_32FC1);
     Tvec.create(3, 1, CV_32FC1);
     for (int i = 0; i < 3; i++)
@@ -51,6 +52,7 @@ Marker::Marker() {
 Marker::Marker(int _id) {
     id = _id;
     ssize = -1;
+	cent = Point2f(0, 0);
     Rvec.create(3, 1, CV_32FC1);
     Tvec.create(3, 1, CV_32FC1);
     for (int i = 0; i < 3; i++)
@@ -64,20 +66,31 @@ Marker::Marker(const Marker &M) : std::vector< cv::Point2f >(M) {
     M.Tvec.copyTo(Tvec);
     id = M.id;
     ssize = M.ssize;
+	cent = Point2f(0, 0);
 }
 
 /**
  *
 */
+Marker::Marker(const std::vector< cv::Point2f > &corners, const Marker &M) : std::vector< cv::Point2f >(corners) {
+    id = M.id;
+    ssize = M.ssize;
+    Rvec.create(3, 1, CV_32FC1);
+    Tvec.create(3, 1, CV_32FC1);
+	Rvec = M.Rvec;
+	Tvec = M.Tvec;
+	cent = Point2f(0, 0);
+}
+
 Marker::Marker(const std::vector< cv::Point2f > &corners, int _id) : std::vector< cv::Point2f >(corners) {
     id = _id;
     ssize = -1;
+	cent = Point2f(0, 0);
     Rvec.create(3, 1, CV_32FC1);
     Tvec.create(3, 1, CV_32FC1);
     for (int i = 0; i < 3; i++)
         Tvec.at< float >(i, 0) = Rvec.at< float >(i, 0) = -999999;
 }
-
 /**
  *
 */
@@ -316,15 +329,14 @@ void Marker::rotateXAxis(Mat &rotation) {
 
 /**
  */
-cv::Point2f Marker::getCenter() const {
-    cv::Point2f cent(0, 0);
-    for (size_t i = 0; i < size(); i++) {
-        cent.x += (*this)[i].x;
-        cent.y += (*this)[i].y;
-    }
-    cent.x /= float(size());
-    cent.y /= float(size());
-    return cent;
+cv::Point2f Marker::getCenter() {
+		for (size_t i = 0; i < size(); i++) {
+			cent.x += (*this)[i].x;
+			cent.y += (*this)[i].y;
+		}
+		cent.x /= float(size());
+		cent.y /= float(size());
+		return cent;
 }
 
 /**
