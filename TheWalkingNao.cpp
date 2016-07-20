@@ -215,12 +215,14 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}
 			}
 				if(distance < 100){
-					Marker m = Marker(candidates.at(i), OldMarkers[k]);
-					candidates.erase (candidates.begin()+i);
+					Marker m = Marker(candidates.at(idx), OldMarkers[kdx]);
+					candidates.erase (candidates.begin()+idx);
 					trackMarkers.push_back(m);		
 				}
 		}
 		// TODO: aggiornare punti, inserire nuovi marker in vettore di output in funzione della direzione
+		imshow("VERI",img);
+		waitKey(700);
 		for(int i = 0; i<trackMarkers.size(); i++)
 			Markers.push_back(trackMarkers.at(i));
 
@@ -228,11 +230,12 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 		for(int i = 0; i<Markers.size(); i++){
 			Markers[i].draw(img,Scalar(0,0,255),2);
 			u.draw3dAxis(img,Markers[i],camParams);	
-			cout<<"MARK  "<<Markers[i]<<endl;
 		}
-						
 
-		imshow("aaaa",img);
+		for(int i = 0; i<candidates.size(); i++)
+			MDetector.drawLine(img, candidates, i);
+
+		imshow("AGGIUNTI",img);
 		waitKey(700);
 #endif	
 	OldMarkers.clear();
