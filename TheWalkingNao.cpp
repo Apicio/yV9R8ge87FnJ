@@ -176,7 +176,7 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 			for(int k=OldMarkers.size()-1;k>=0;k--){
 				Point mC = Markers[i].getCenter();
 				Point mO = OldMarkers[k].getCenter();
-				if(cv::norm(mC-mO) < 10)
+				if(cv::norm(mC-mO) < 100)
 					OldMarkers.erase (OldMarkers.begin()+k);
 			}
 		}
@@ -322,7 +322,7 @@ void TheWalkingNao::standUp() {
  }
  void TheWalkingNao::walk(float X, float Y){
 	 AL::ALValue val = motion->getMoveConfig("Default");;
-  val[0][1] = 0.020; //DefX
+	 val[0][1] = 0.020; //DefX
 	 val[2][1] = 0.101; //DefY
 	 val[3][1] = 0.2;   //DefZ
 	 val[4][1] = 0.5;   //Freq
