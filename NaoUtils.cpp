@@ -54,7 +54,6 @@ void NaoUtils::explore(){
 	motionProx.stiffnessInterpolation(jointPitch, stiffness, time);
 	motionProx.stiffnessInterpolation(jointYaw, stiffness, time);
 	motionProx.rest();
-	
   }
   catch (const AL::ALError& e) {
     std::cerr << "Caught exception: " << e.what() << std::endl;

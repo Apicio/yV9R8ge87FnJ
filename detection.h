@@ -4,13 +4,13 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include "Constants.h"
-#include "BlobResult.h"
+#include "OpenCVBlobs\library\BlobResult.h"
 #include "opencv2\gpu\gpu.hpp"
 
-#define HEIGH 960
-#define WIDTH 1280
+#define HEIGH 480
+#define WIDTH 640
 #define MAX_AREA 40000
-#define MIN_AREA 5000
+#define MIN_AREA 1000
 #define RECT_AUGMENT 0.1
 #define SHADOW_THRESH 80
 #define MEAN_OFFSET

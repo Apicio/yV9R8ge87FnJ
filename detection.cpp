@@ -8,6 +8,7 @@ vector<double> computeArea(vector<vector<Point> > contours){
 		vector<Point> row = contours.at(i);
 		double area = contourArea(row);
 		toret.push_back(area);
+		
 	}
 	return toret;
 }
@@ -453,8 +454,6 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 #else
 	morph = masked;
 #endif
-	imshow("morph",morph);
-	waitKey(0);
 	/*Ricerca componenti connesse e rimozione in base all'area*/
 	cvtColor(morph,bwmorph,CV_BGR2GRAY);
 	findContours(bwmorph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
@@ -515,7 +514,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 	//out = out+cont;
 	bitwise_xor(out,cont,out);
 	
-/*	imshow("img",img);
+	/*imshow("img",img);
 	imshow("out",out);
 	waitKey(0);*/
 }

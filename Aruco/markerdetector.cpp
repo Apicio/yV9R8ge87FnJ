@@ -34,7 +34,7 @@ or implied, of Rafael Muñoz Salinas.
 #include <fstream>
 #include "arucofidmarkers.h"
 #include <valarray>
-#define SHARP 0
+#define SHARP 1
 #define SOGLIA 0.3
 using namespace std;
 using namespace cv;
@@ -199,7 +199,7 @@ void MarkerDetector::sharpMark(Mat in, vector<Mat > &out, int x, int y, Mat comp
 	}
 	if(out.size() >=2) return ;
 	static cv::Mat id136=cv::Mat::zeros(7,7,CV_8UC1);
-	static cv::Mat id787=cv::Mat::zeros(7,7,CV_8UC1);
+	static cv::Mat id0=cv::Mat::zeros(7,7,CV_8UC1);
 	for (int ii = 0;ii<7;ii++)
     {	
         for (int jj = 0;jj<7;jj++)
@@ -209,20 +209,22 @@ void MarkerDetector::sharpMark(Mat in, vector<Mat > &out, int x, int y, Mat comp
 			if(jj==1 && ii==1 || jj==1 && ii==3 || jj==1 && ii==5 ||
 		       jj==2 && ii==2 || jj==2 && ii==4 ||
 			   jj==5 && ii==2 || jj==5 && ii==4 )
-				id136.at<uchar>(ii,jj) = 255;
+				id136.at<uchar>(ii,jj) = 255;/*
 			if(jj==1 && ii==2 || jj==1 && ii==3 || jj==1 && ii==4 ||
 		       jj==2 && ii==1 || jj==2 && ii==5 ||
 			   jj==3 && ii==1 || jj==3 && ii==3 || jj==3 && ii==5 || 
 			   jj==4 && ii==1 || jj==4 && ii==3 || jj==4 && ii==5 ||
 			   jj==5 && ii==3)
-				id787.at<uchar>(ii,jj) = 255;
+				id787.at<uchar>(ii,jj) = 255;*/
+			if(jj==1 && ii==1 || jj==1 && ii==2 || jj==1 && ii==3 || jj==1 && ii==4 || jj==1 && ii==5)
+				id0.at<uchar>(ii,jj) = 255;
 		}
 	}
 	cv::Mat r_id136, r_id787;
 	for (int i=0; i<4; i++){
 		rotate_90n(id136, r_id136, 90*i);
 		double s1 = cv::sum( computationMatrix-r_id136 )[0];
-		rotate_90n(id787, r_id787, 90*i);
+		rotate_90n(id0, r_id787, 90*i);
 		double s2 = cv::sum( computationMatrix-r_id787 )[0];
 		if(s1 ==0 || s2 ==0){
 			cv::Mat toRet=cv::Mat::zeros(grey.rows,grey.cols,CV_8UC1);
