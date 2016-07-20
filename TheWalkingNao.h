@@ -12,6 +12,7 @@
 #include "aruco.h"
 #include <vector>
 #include <math.h>
+#include "NaoUtils.h"
 // Aldebaran includes.
 #include <alerror/alerror.h>
 #include <alproxies/almotionproxy.h>
@@ -53,7 +54,8 @@ public:
 	
 	TheWalkingNao();
 	vector<Marker> ArucoFind(Mat img, double& angle,bool toRemoveMarkers);
-	void TheWalkingNao::moveNearMarker(Mat img);
+	void infiniteRotate(float velTheta);
+	void moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy camProx);
 	void standUp();
 	void moveLeft(float meters,double angle);
 	void moveRight(float meters, double angle);
@@ -61,8 +63,11 @@ public:
 	void rotate(float angle);
 	void restNow();
 	bool isMoving();
-	 void moveOnX(float meters);
-	 void walk(float X, float Y);
+	void moveOnX(float meters);
+	void moveUpNeck();
+	void moveDownNeck(float PitchAngle);
+	void walk(float X, float Y);
+	void infinteWalk(float velX, float velY);
 	void init(const char* robotIP);
 	~TheWalkingNao(void);
 };

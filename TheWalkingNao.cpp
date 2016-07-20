@@ -63,7 +63,11 @@ TheWalkingNao::TheWalkingNao(){
 	camParams = cam;
 }
 
+
 static vector<Marker> OldMarkers;
+bool sort_fun_minus(Marker a, Marker b){
+	return a.getCenter().y < b.getCenter().y;
+}
 vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMarkers){
 	if(_invert){
 		Mat white(img.size(), img.type(), Scalar(255,255,255));
@@ -186,7 +190,6 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				cent.x += candidate.at(ii).x;
 				cent.y += candidate.at(ii).y;
 			}
-
 			cent.x /=4;
 			cent.y /=4;
 			for(int i=0;i<Markers.size();i++){
@@ -197,7 +200,7 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}
 			}
 		}
-		for(int i=0; i<centroids.size();i++){
+		for(int i=centroids.size()-1; i>=0;i--){
 			int distance = INT_MAX;
 			int idx = 0;
 			int kdx = 0;
@@ -210,28 +213,28 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}
 			}
 				if(distance < 100){
-/*					for(int ii = 0; ii<4; ii++){
-						for(int jj = 0; jj<4; jj++){
-
-						}
-					}*/
-					Marker m = Marker(OldMarkers[k]);
-					trackMarkers.push_back(m);
-					u.draw3dAxis(img,m,camParams);
+					Marker m = Marker(candidates.at(i), OldMarkers[k]);
+					candidates.erase (candidates.begin()+i);
+					trackMarkers.push_back(m);		
 				}
 		}
-		
-			imshow("aaaa",img);
-			waitKey(700);
+		// TODO: aggiornare punti, inserire nuovi marker in vettore di output in funzione della direzione
+		for(int i = 0; i<trackMarkers.size(); i++)
+			Markers.push_back(trackMarkers.at(i));
 
-
-
-		for(int i=0; i<candidates.size(); i++){
-			MDetector.drawLine(img,candidates,i);
+		std::sort(Markers.begin(), Markers.end(), sort_fun_minus);
+		for(int i = 0; i<Markers.size(); i++){
+			Markers[i].draw(img,Scalar(0,0,255),2);
+			u.draw3dAxis(img,Markers[i],camParams);	
+			cout<<"MARK  "<<Markers[i]<<endl;
 		}
+						
+
+		imshow("aaaa",img);
+		waitKey(700);
 #endif	
 	OldMarkers.clear();
-	OldMarkers = Markers;	
+	OldMarkers = Markers;		
     }catch (std::exception &ex){cout<<"Exception :"<<ex.what()<<endl;}
 	return Markers;
 }
@@ -307,20 +310,59 @@ void TheWalkingNao::standUp() {
  
  void TheWalkingNao::moveForward(float meters) {
  	/* moves forward, without torso rotation */
-	 motion->moveTo(meters, 0, 0);//{ {"MaxStepX",0.02} , {"MaxStepY",0.101} });
+    AL::ALValue val = motion->getMoveConfig("Max");
+	 motion->moveTo(meters, 0, 0);//,val);//{ {"MaxStepX",0.02} , {"MaxStepY",0.101} });
  }
 
- void TheWalkingNao::moveOnX(float meters){
-	 motion->moveTo(0, meters, 0);
- }
  void TheWalkingNao::rotate(float angle){
-	 motion->moveTo(0, 0, angle);
+	 motion->post.moveTo(0, 0, angle);
  }
  void TheWalkingNao::walk(float X, float Y){
-	 motion->moveTo(X,Y,0);
+	 AL::ALValue val = motion->getMoveConfig("Default");;
+  val[0][1] = 0.020; //DefX
+	 val[2][1] = 0.101; //DefY
+	 val[3][1] = 0.2;   //DefZ
+	 val[4][1] = 0.5;   //Freq
+	
+	 motion->post.moveTo(X,Y,0,val);
+ }
+ void TheWalkingNao::infinteWalk(float velX, float velY){
+	 AL::ALValue val = motion->getMoveConfig("Default");;
+    val[0][1] = 0.020; //DefX
+	 val[2][1] = 0.101; //DefY
+	 val[3][1] = 0.2;   //DefZ
+	 val[4][1] = 0.5;   //Freq
+	
+	 motion->post.move(velX,velY,0, val);
+ }
+  void TheWalkingNao::infiniteRotate(float velTheta){
+	 AL::ALValue val = motion->getMoveConfig("Default");
+     val[0][1] = 0.020; //DefX
+	 val[2][1] = 0.101; //DefY
+	 val[3][1] = 0.2;   //DefZ
+	 val[4][1] = 0.5;   //Freq
+	 
+
+	 motion->post.move(0,0,velTheta,val);
  }
 
-  void TheWalkingNao::restNow() {
+void TheWalkingNao::moveDownNeck(float PitchAngle){
+	 const AL::ALValue jointPitch = "HeadPitch";
+	 AL::ALValue stiffness = 1.0f;
+     AL::ALValue time = 1.0f;
+     motion->stiffnessInterpolation(jointPitch, stiffness, time);
+	 AL::ALValue targetAnglePitch = PitchAngle;
+     motion->angleInterpolation(jointPitch, targetAnglePitch,time, true);
+}
+
+void TheWalkingNao::moveUpNeck(){
+	const AL::ALValue jointPitch = "HeadPitch";
+     AL::ALValue time = 1.0f;
+	 AL::ALValue targetAnglePitch = 0;
+     motion->angleInterpolation(jointPitch, targetAnglePitch,time, true);
+}
+
+void TheWalkingNao::restNow() {
  	/* moves forward, without torso rotation */
  	motion->rest();
  }
@@ -330,52 +372,269 @@ bool TheWalkingNao::isMoving(){
 
 
 
- void TheWalkingNao::moveNearMarker(Mat img){
+
+
+ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy camProx){	
 	double angle = 0;
 	double distY = 0; 
 	double distX = 0;
-	int d = 0;
 	int heigh = 0;
 	vector<Marker> markers ;
 	/*Becca il marker*/
 	/*Vai avanti finché non scompare salvando l'angolo*/
 	/*ruota dell'angolo che hai ottenuto*/
+	int k=0;
+	int a=0;
+	int b=0;
+	int c=0;
+	int d=0;
+	int e=0;
+	int f=0;
+	int g=0;
+	int h=0;
+	int i=0;
+	int l=0;
+
+	char prevState = 'Z';
+	char currState = 'C';
+	Point center;
 	do{		
 		markers = ArucoFind(img,angle,false);
 		
-		if( markers.size() != 0){
-			cout<<markers[0].getCenter()<<endl;
-			heigh = markers[0].getPerimeter()/4; //supponiamo mm
+		// Posizioniamo il target al centro dell'immagine, oppure dove si trova il marker
+		if(markers.size() !=0){
+			k=0;
+			center =(Point) markers[0].getCenter();
 		}
-		distX = markers.size() != 0 ? ( markers[0].getCenter().x - WIDTH/2 ) : distX*0.8; 
-	/*	distY = markers.size() != 0 ?( HEIGH - markers[0].getCenter().y) : distY*0.6;*/
-		distY = (0.69*200*480)/(heigh*2.46); //in mm
-		
-		cout<<"distY: "<< distY<<"HEIGH: "<<heigh<<endl;
-		
-		walk(distY/1000,distX/2000);
-				
-		cout<<"distX: "<<distX<<endl;
-		cout<<markers.size()<<endl;
-		if(cv::waitKey(1) == 'e')
-			break;
-		if(angle>0)
-				angle-=90;
-		cout<<"angle"<<angle-90<<endl;
-		rotate((angle/180)*3.14);
-		break;
+		else{
+			k++;
+			if(k>3){
+				center = Point(320,240);
+				k=0;
+			}else
+				infinteWalk(0.5, 0);
+		}
+		int X = center.x;
+		int Y = center.y; 
+	   /************|******|*****|*****|*****************
+	    *	75		|	   |     |	   |		75	    *
+		*			|	   |	 |	   |			    *
+		*			|	B  |  C  |	D  |		E		*
+		*	A		|	   |     |	   |				*
+		*			|  38  | 94  |	38 |				*
+		*	150		|	   |     |	   |				*
+		-------------------------------------------------
+		*	L		| 	   |	 |	   |		F		*
+		*	90	    | 	I  |  H  |	G  |		 		*
+		************|******|*****|*****|*****************/
+/*		bool A = X<=75 && Y<=150;
+		bool B = X>75 && X<=113 && Y<=150;
+		bool C = X>113 && X<=207 && Y<=150;
+		bool D = X>207 && X<=245 && Y<=150;
+		bool E = X>245 && X<=320 && Y<=150;
+		bool F = X>245 && X<=320 && Y>150;
+		bool G = X>207 && X<=245 && Y>150;
+		bool H = X>113 && X<=207 && Y>150;
+		bool I = X>75 && X<=113 && Y>150;
+		bool L = X<=75 && Y>150;*/
+		bool A = X>0 && X<=100 && Y<=336;
+		bool B = X>100 && X<=180 && Y<=336;
+		bool C = X>180 && X<=460 && Y<=336;
+		bool D = X>460 && X<=540 && Y<=336;
+		bool E = X>540 && X<=640 && Y<=336;
+		bool F = X>540 && X<=640 && Y>336;
+		bool G = X>460 && X<=540 && Y>336;
+		bool H = X>180 && X<=460 && Y>336;
+		bool I = X>100 && X<=180 && Y>336;
+		bool L = X>0 && X<=100 && Y>336;
+		if(C){
+			c++;
+			prevState = currState;
+			currState = 'C';
+			a=0;b=0;e=0;d=0;f=0;g=0;h=0;i=0;l = 0;
+			//rectangle( img, Point(114,0),Point(207,150), Scalar(0,0,255), 2, 8, 0 ); //C
+		}
+		if(H){
+			h++;
+			prevState = currState;
+			currState = 'H';
+			a=0;b=0;c=0;e=0;d=0;f=0;g=0;i=0;l = 0;
+			//rectangle( img, Point(113,150),Point(206,150), Scalar(0,0,255), 2, 8, 0 ); //H
+		}		
+		if(A){
+			a++;
+			prevState = currState;
+			currState = 'A';
+			b=0;c=0;e=0;d=0;f=0;g=0;h=0;i=0;l = 0;
+			//rectangle( img, Point(0,0),Point(75,150), Scalar(0,0,255), 2, 8, 0 ); //A
+		}
+		if(B){
+			b++;
+			prevState = currState;
+			currState = 'B';
+			a=0;c=0;e=0;d=0;f=0;g=0;h=0;i=0;l = 0;
+			//rectangle( img, Point(76,0),Point(113,150), Scalar(0,0,255), 2, 8, 0 );//B
+		}
+		if(L){
+			l++;
+			prevState = currState;
+			currState = 'L';
+			a=0;b=0;c=0;e=0;d=0;f=0;g=0;h=0;i=0;
+			//rectangle( img, Point(0,150),Point(75,150), Scalar(0,0,255), 2, 8, 0 );		 //L
+		}
+		if(I){
+			i++;
+			prevState = currState;
+			currState = 'I';
+			a=0;b=0;c=0;e=0;d=0;f=0;g=0;h=0;l = 0;
+			//rectangle( img, Point(75,150),Point(112,150), Scalar(0,0,255), 2, 8, 0 );    //I
+		}
+		if(E){
+			e++;
+			prevState = currState;
+			currState = 'E';
+			a=0;b=0;c=0;d=0;f=0;g=0;h=0;i=0;l = 0;
+			//rectangle( img, Point(246,0),Point(320,150), Scalar(0,0,255), 2, 8, 0 );   //E
+		}
+		if(D){
+			d++;
+			prevState = currState;
+			currState = 'D';
+			a=0;b=0;c=0;e=0;f=0;g=0;h=0;i=0;l = 0;
+			//rectangle( img, Point(208,0),Point(245,150), Scalar(0,0,255), 2, 8, 0 );   //D
+		}
+		if(F){
+			f++;
+			prevState = currState;
+			currState = 'F';
+			a=0;b=0;c=0;e=0;d=0;g=0;h=0;i=0;l = 0;
+			//rectangle( img, Point(246,150),Point(320,240), Scalar(0,0,255), 2, 8, 0 ); //F
+		}
+		if(G){
+			g++;
+			prevState = currState;
+			currState = 'G';
+			a=0;b=0;c=0;e=0;d=0;f=0;h=0;i=0;l = 0;
+			//rectangle( img, Point(207,150),Point(245,240), Scalar(0,0,255), 2, 8, 0 );		 //G
+		}
+		bool _event = currState != prevState;
+		if(_event){
+			cout<<"EVENTO: ";
+			//this->motion->stopMove();
+			if(C){
+				cout<<"c"<<endl;
+				infinteWalk(0.5, 0); // Muovi in avanti con velocità 0.2
+				// muovi avanti finchè in C
+				//waitKey(1000);
+			}
+			if(H){
+				cout<<"H"<<endl;
+				walk(0.2, 0);
+				// muovi in avanti di 30 cm / tunare
+				//waitKey(1000);
+			}		
+			if(A){
+				cout<<"A"<<endl;
+				infiniteRotate(0.2);
+				// ruota in senso antiorario finchè non B
+				//waitKey(1000);
+			}
+			if(B){
+				cout<<"B"<<endl;
+				infinteWalk(0, 0.5); 
+				// trasla a sinistra finchè non C
+				//waitKey(1000);
+			}
+			if(L){
+				cout<<"L"<<endl;
+				infiniteRotate(0.1);
+				// uguale A
+				//waitKey(1000);
+			}
+			if(I){
+				cout<<"I"<<endl;
+				infinteWalk(0, 0.5);
+				// uguale B
+				//waitKey(1000);
+			}
+			if(E){
+				cout<<"E"<<endl;
+				infiniteRotate(-0.2);
+				// ruota in senso orario finchè non D
+				//waitKey(1000);
+			}
+			if(D){
+				cout<<"D"<<endl;
+				infinteWalk(0, -0.5);
+				// trasla a destra finchè non C
+				//waitKey(1000);
+			}
+			if(F){
+				cout<<"F"<<endl;
+				infiniteRotate(-0.2);
+				// uguale a E
+				//waitKey(1000);
+			}
+			if(G){
+				cout<<"G"<<endl;
+				infinteWalk(0, -0.5);
+				// uguale a D
+				//waitKey(1000);
+			}
+		}
+		_event = false;
+		imshow("image_nao",img);
+		img = nu.see(camProx);
+		}while(cv::waitKey(1)!='e');
 
-		/*if(distY < 50){ //Siamo sul marker
-			cout<<"angle"<<angle<<endl;
-			if(angle>0)
-				angle-=90;
-			rotate((angle/180)*3.14);
-			break;
-		}*/
 
-		//moveForward(distY/2000);	
-	}while(true);
+	//	//if( markers.size() != 0){
+	//	//	if(markers[0].getCenter().y > HEIGH*0.8){
+	//	//		moveDownNeck(0.26);
+	//	//		i++;
+	//	//	}
+	//	//	/*center = markers[0].getCenter();
+	//	//	heigh = markers[0].getPerimeter()/4; *///supponiamo mm
+	//	//	if(!isMoving())
+	//	//		infinteWalk(0.2,0);
+	//	//	
+	//	//}
+	//	//else{
+	//	//	this->motion->stopMove();
+	//	//	moveUpNeck();
+	//	//	i=0;
+	//	//	break;
+	//	//}
+	//	distX = markers.size() != 0 ? ( markers[0].getCenter().x - WIDTH/2 ) : distX*0.8; 
+	//	distY = markers.size() != 0 ?( HEIGH - markers[0].getCenter().y) : distY*0.6;
+	//	//distY = markers.size() != 0 ?(0.69*200*480)/(heigh*2.46): 0; //in mm
+	////	distY =1.41e-06*std::pow((double)center.y,3) - 6.444e-05*std::pow((double)center.y,2) +0.1223*center.y + 29.88;
+	////	distY = markers.size() != 0 ?-1.41e-06*std::pow((double)center.y,3)- 0.001966*std::pow((double) center.y,2) - 1.035*( center.y) + 228.7 : 0;
+
+	//	if(!isMoving())
+	//		walk(distY/100,0);
+	//	if(markers.size()!=0)
+	//		cout<<"YOYOYOYOYOYOOYOYOYOYOYOYOYOYOYOYO"<<endl;
+	//	cout<<"distY: "<<distY<<endl;
+	//	if(cv::waitKey(1) == 'e')
+	//		break;
+	//	if(angle>0)
+	//			angle-=90;
+	//	rotate((angle/180)*3.14);
+	//	break;
+
+	//	/*if(distY < 50){ //Siamo sul marker
+	//		cout<<"angle"<<angle<<endl;
+	//		if(angle>0)
+	//			angle-=90;
+	//		rotate((angle/180)*3.14);
+	//		break;
+	//	}*/
+	//	/*distY=0;
+	//	moveForward(distY/2000);	*/
+	
  }
+ 
  
 
 

@@ -78,6 +78,13 @@ Marker::Marker(const std::vector< cv::Point2f > &corners, int _id) : std::vector
         Tvec.at< float >(i, 0) = Rvec.at< float >(i, 0) = -999999;
 }
 
+Marker::Marker(const std::vector< cv::Point2f > &corners, const Marker &M) : std::vector< cv::Point2f >(corners) {
+    M.Rvec.copyTo(Rvec);
+    M.Tvec.copyTo(Tvec);
+    id = M.id;
+    ssize = M.ssize;
+}
+
 /**
  *
 */
