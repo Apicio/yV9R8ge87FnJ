@@ -408,8 +408,9 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 		 if(area < 10000 && area > 400)
 			 blobsRs.GetBlob(i)->FillBlob(newimg,CV_RGB(255,255,255),0,0,true);
     }
-	imshow("aaaaaa",newimg);
-	waitKey(300);
+
+
+
 	threshold(masked,whiteMaskMasked,0,255,THRESH_BINARY);
 	cvtColor(whiteMaskMasked,whiteMaskMasked,CV_BGR2GRAY);
 		cout << whiteMaskMasked.type() << " " << whiteMaskOrig.type() << endl;
@@ -425,7 +426,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 #else
 	morph = masked;
 #endif
-	imshow("masked",masked);
+	
 	
 	/*Ricerca componenti connesse e rimozione in base all'area*/
 	cvtColor(morph,bwmorph,CV_BGR2GRAY);
@@ -487,9 +488,9 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 	//out = out+cont;
 	bitwise_xor(out,cont,out);
 	
-	imshow("img",img);
+	/*imshow("img",img);
 	imshow("out",out);
-	waitKey(0);
+	waitKey(0);*/
 }
 
 //void detect(Mat img, vector<Mat>& regionsOfInterest){

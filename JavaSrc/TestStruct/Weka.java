@@ -22,8 +22,8 @@ public class Weka
 	public Weka(String model) throws Exception{
 
 
-		MP = (MultilayerPerceptron) weka.core.SerializationHelper.read("res//MP_100.model");
-		RedApple =  (LibSVM) weka.core.SerializationHelper.read("res//Red.model");
+		MP = (MultilayerPerceptron) weka.core.SerializationHelper.read("..//JavaSrc//TestStruct//MP_100.model");
+		/*RedApple =  (LibSVM) weka.core.SerializationHelper.read("res//Red.model");
 
 
 
@@ -45,7 +45,7 @@ public class Weka
 		NOTGlass =  (LibSVM) weka.core.SerializationHelper.read("res//NOTGlass.model");
 
 
-		NOTCup =  (LibSVM) weka.core.SerializationHelper.read("res//NOTCup.model");
+		NOTCup =  (LibSVM) weka.core.SerializationHelper.read("res//NOTCup.model");*/
 
 	}
 
@@ -121,13 +121,13 @@ public double runClassification(String features){
 		unlabeled.setClassIndex(unlabeled.numAttributes() - 1);	
 		double result = MP.classifyInstance(unlabeled.get(0));
 		if(result == 0)
-			return 3;
+			return 3; // bicchiere
 		else if(result == 1)
-			return 4;
+			return 4;  //tazzina
 		else if(result == 2)
-			return 1;
+			return 1;  //mela_rossa
 		else if(result == 3)
-			return 2;
+			return 2; //mela gialla
 
 		prob = MP.distributionForInstance(unlabeled.get(0));
 

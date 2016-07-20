@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include "Constants.h"
-#include "BlobResult.h"
+#include "OpenCVBlobs\library\BlobResult.h"
 #include "opencv2\gpu\gpu.hpp"
 
 #define HEIGH 480
