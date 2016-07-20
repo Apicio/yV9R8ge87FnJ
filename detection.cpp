@@ -156,7 +156,7 @@ Mat backgroundRemoval(Mat& img){
 	Mat imgHSV; Mat HSVbands[3]; Mat toRet = img.clone(); Mat mask1,mask2,maskTOT;
 	cvtColor(img,imgHSV,CV_BGR2HSV);
 	split(imgHSV,HSVbands);
-	mask1 = HSVbands[0] <= 70/2;
+	mask1 = HSVbands[0] <= 80/2;
 	mask2 = HSVbands[0] >= 270/2;
 	//bitwise_and(mask1,mask2,maskTOT);
 	maskTOT = mask1 + mask2;
@@ -328,6 +328,7 @@ CBlobResult computeWhiteMaskOtsu(Mat& imgRGBin, Mat& imgHSVIn, CBlobResult& blob
 	}		
 	return blobs;
 }
+
 void rgb2cmyk(cv::Mat& img, std::vector<cv::Mat>& cmyk) {
     // Allocate cmyk to store 4 componets
     for (int i = 0; i < 4; i++) {
@@ -363,7 +364,38 @@ Mat computeInterest(Mat& img){
 	return img;
 }
 
+void SimplestCB(Mat& in, Mat& out, float percent) {
+    assert(in.channels() == 3);
+    assert(percent > 0 && percent < 100);
+
+    float half_percent = percent / 200.0f;
+
+    vector<Mat> tmpsplit; split(in,tmpsplit);
+    for(int i=0;i<3;i++) {
+        //find the low and high precentile values (based on the input percentile)
+        Mat flat; tmpsplit[i].reshape(1,1).copyTo(flat);
+        cv::sort(flat,flat,CV_SORT_EVERY_ROW + CV_SORT_ASCENDING);
+        int lowval = flat.at<uchar>(cvFloor(((float)flat.cols) * half_percent));
+        int highval = flat.at<uchar>(cvCeil(((float)flat.cols) * (1.0 - half_percent)));
+        cout << lowval << " " << highval << endl;
+        
+        //saturate below the low percentile and above the high percentile
+        tmpsplit[i].setTo(lowval,tmpsplit[i] < lowval);
+        tmpsplit[i].setTo(highval,tmpsplit[i] > highval);
+        
+        //scale the channel
+        normalize(tmpsplit[i],tmpsplit[i],0,255,NORM_MINMAX);
+    }
+    merge(tmpsplit,out);
+}
+
 void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
+/*	Mat blurred; 
+	GaussianBlur(img, blurred, Size(), _SharpSigma, _SharpSigma);
+	Mat lowContrastMask = abs(img - blurred) < _SharpThreshold;
+	Mat sharpened = img*(1+_SharpAmount) + blurred*(-_SharpAmount);
+	img.copyTo(sharpened, lowContrastMask);
+	sharpened.copyTo(img);*/
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray; 
 	Mat out = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
@@ -397,16 +429,15 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 
 	whiteMaskMasked = computeWhiteMaskLight(masked);
 	whiteMaskMasked = whiteMaskMasked + computeWhiteMaskShadow(masked);
-	*/
-	computeInterest(img);
+*/
 	CBlobResult blobsRs;
 	blobsRs = computeWhiteMaskOtsu(img, img, blobsRs, img.rows*img.cols, img.rows*img.cols, 0.8, 0.8, 30, 200, 0);
+	
+	//Mat newimg(img.size(),img.type());
     whiteMaskOrig.setTo(0);
     for(int i=0;i<blobsRs.GetNumBlobs();i++){
 			 blobsRs.GetBlob(i)->FillBlob(whiteMaskOrig,CV_RGB(255,255,255),0,0,true);
     }
-
-
 
 	threshold(masked,whiteMaskMasked,0,255,THRESH_BINARY);
 	cvtColor(whiteMaskMasked,whiteMaskMasked,CV_BGR2GRAY);
@@ -423,8 +454,6 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 #else
 	morph = masked;
 #endif
-	
-	
 	/*Ricerca componenti connesse e rimozione in base all'area*/
 	cvtColor(morph,bwmorph,CV_BGR2GRAY);
 	findContours(bwmorph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
