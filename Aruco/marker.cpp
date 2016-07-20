@@ -78,11 +78,47 @@ Marker::Marker(const std::vector< cv::Point2f > &corners, int _id) : std::vector
         Tvec.at< float >(i, 0) = Rvec.at< float >(i, 0) = -999999;
 }
 
-Marker::Marker(const std::vector< cv::Point2f > &corners, const Marker &M) : std::vector< cv::Point2f >(corners) {
+Marker::Marker(const std::vector< cv::Point2f > &corners, const Marker &M) : std::vector< cv::Point2f >(M) {
     M.Rvec.copyTo(Rvec);
     M.Tvec.copyTo(Tvec);
     id = M.id;
     ssize = M.ssize;
+	cv::Point2f corners_cent(0, 0);
+    for (size_t i = 0; i < size(); i++) {
+        corners_cent.x += corners[i].x;
+        corners_cent.y += corners[i].y;
+    }
+    corners_cent.x /= float(size());
+    corners_cent.y /= float(size());
+
+	cv::Point2f cent_Marker = M.getCenter();
+
+	int y_dist = cv::norm(cent_Marker.y-corners_cent.y);
+	if(cent_Marker.y < corners_cent.y){
+		(*this)[0].y = (*this)[0].y+y_dist;
+		(*this)[1].y = (*this)[1].y+y_dist;
+		(*this)[2].y = (*this)[2].y+y_dist;
+		(*this)[3].y = (*this)[3].y+y_dist;
+	}else{
+		(*this)[0].y = (*this)[0].y-y_dist;
+		(*this)[1].y = (*this)[1].y-y_dist;
+		(*this)[2].y = (*this)[2].y-y_dist;
+		(*this)[3].y = (*this)[3].y-y_dist;
+	}
+	int x_dist = cv::norm(cent_Marker.x-corners_cent.x);
+	if(cent_Marker.x < corners_cent.y){
+		(*this)[0].x = (*this)[0].x+x_dist;
+		(*this)[1].x = (*this)[1].x+x_dist;
+		(*this)[2].x = (*this)[2].x+x_dist;
+		(*this)[3].x = (*this)[3].x+x_dist;
+	}else{
+		(*this)[0].x = (*this)[0].x-x_dist;
+		(*this)[1].x = (*this)[1].x-x_dist;
+		(*this)[2].x = (*this)[2].x-x_dist;
+		(*this)[3].x = (*this)[3].x-x_dist;
+	}
+	
+
 }
 
 /**

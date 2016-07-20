@@ -56,7 +56,7 @@ class ARUCO_EXPORTS Marker : public std::vector< cv::Point2f > {
      */
     Marker(int id);
     /**
-     */
+     */ 
     Marker(const Marker &M);
     /**
      */
