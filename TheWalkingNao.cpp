@@ -224,7 +224,7 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 		for(int i = 0; i<trackMarkers.size(); i++)
 			Markers.push_back(trackMarkers.at(i));
 
-		//std::sort(Markers.begin(), Markers.end(), sort_fun_minus);
+		std::sort(Markers.begin(), Markers.end(), sort_fun_minus);
 		for(int i = 0; i<Markers.size(); i++){
 			Markers[i].draw(img,Scalar(0,0,255),2);
 			u.draw3dAxis(img,Markers[i],camParams);	
@@ -232,9 +232,6 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 
 		for(int i = 0; i<candidates.size(); i++)
 			MDetector.drawLine(img, candidates, i);
-
-
-						
 
 		imshow("AGGIUNTI",img);
 		waitKey(700);
