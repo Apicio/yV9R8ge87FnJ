@@ -7,11 +7,11 @@
 #include "BlobResult.h"
 #include "opencv2\gpu\gpu.hpp"
 
-#define HEIGH 960
-#define WIDTH 1280
-#define MAX_AREA 40000
-#define MIN_AREA 5000
-#define RECT_AUGMENT 0.1
+#define HEIGH 480
+#define WIDTH 640
+#define MAX_AREA 10000
+#define MIN_AREA 400
+#define RECT_AUGMENT 0.2
 #define SHADOW_THRESH 80
 #define MEAN_OFFSET
 #define DO_MORPH 0

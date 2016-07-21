@@ -8,7 +8,7 @@
 #include <fstream> 
 #include "Constants.h"
 
-#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,entropy,area,distance,"
+#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,entropy,ratio,area,distance,"
 
 using namespace std;
 
@@ -35,7 +35,8 @@ public:
 	std::string readMeanHueAndMoments(cv::Mat image);
 	std::string readStdDevHue(cv::Mat image);
 	double computeEntropy(cv::Mat );
-        double computeRectangleRatio(cv::Mat image);
+    double computeRectangleRatio(cv::Mat image);
+	double computeRectangleRatio(cv::Rect r) ;
 	//double readBboxComparasion(cv::Mat image);	
 };
 

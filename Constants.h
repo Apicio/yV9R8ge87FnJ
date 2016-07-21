@@ -17,5 +17,6 @@ struct Blob {
 	cv::Mat blobsImage;
 	cv::Mat cuttedWithBack;
 	cv::Rect rectangles;
+	cv::Rect resizedRect;
 };
 

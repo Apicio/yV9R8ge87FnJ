@@ -330,7 +330,7 @@ void TheWalkingNao::standUp() {
 	 motion->post.moveTo(X,Y,0,val);
  }
  void TheWalkingNao::infiniteWalk(float velX, float velY, float angle){
-	 AL::ALValue val = motion->getMoveConfig("Default");;
+	 AL::ALValue val = motion->getMoveConfig("Default");
     
 	 val[3][1] = 0.5;   //Freq
 	

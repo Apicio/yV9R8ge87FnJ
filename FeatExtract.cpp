@@ -42,10 +42,7 @@ std::string FeatExtract::readStdDevHue(cv::Mat image){
 	return s.str();
 }
 
-/*NB:USARE QUESTA DURANTE LA MOVIMENTAZIONE
-L'idea è che la detection ritorna la struttura Blob popolata con tutte le informazioni utili all'estrazione delle features. Ovviamente
-noi dobbiamo estrarre le features da ogni singolo oggetto che abbiamo estratto, quindi currIdx serve per selezionare l'iesimo oggetto.
-*/
+/*NB:USARE QUESTA DURANTE LA MOVIMENTAZIONE*/
 std::string FeatExtract::extractDuringMovement(Blob b, bool toMask){
 	cv::Mat img =(b.cuttedWithBack).clone();
 	cv::Mat mask;
@@ -54,10 +51,12 @@ std::string FeatExtract::extractDuringMovement(Blob b, bool toMask){
 	 if(toMask)
 		 img = b.cuttedImages.clone();
 
-	s1<<readMeanHueAndMoments(img);
-	s1<<readStdDevHue(img);
-	s1<<computeEntropy(img)<<",";
+	 s1<<readMeanHueAndMoments(img(b.resizedRect));
+	 s1<<readStdDevHue(img(b.resizedRect));
+	 s1<<computeEntropy(img(b.resizedRect))<<",";
+	s1<<computeRectangleRatio(b.resizedRect)<<",";
 	s1<<b.area<<","<<b.distance<<",";
+	
 	s1<<"?"; //per Weka
 	return s1.str();
 }
@@ -115,6 +114,11 @@ double FeatExtract::computeRectangleRatio(cv::Mat image) {
     return double(maxY - minY) / (maxX - minX);
 }
 
+double FeatExtract::computeRectangleRatio(cv::Rect r) {
+	return r.height/r.width;
+}
+
+
 
 void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite, std::vector<string> types, bool toMask){
 	 DIR *pDIR;
@@ -138,6 +142,7 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
 				std::cout<<s1.str();
 				if(s1.str().find(".jpg")!=std::string::npos){
 					readed = cv::imread(s1.str());
+					Rect r = refitToBorders(readed);
 					if(toMask){
 						mask = backgroundRemoval(readed);
 						split(readed,bands);
@@ -146,10 +151,12 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
 
 				/*CALCOLO RAPPORTO FRA BBOX, NB: PRIMA DELLA RESIZE!!!*/
 			//	writer<<readBboxComparasion(readed)<<",";
-
-					writer<<readMeanHueAndMoments(readed);
-					writer<<readStdDevHue(readed);
-					writer<<computeEntropy(readed)<<",";
+				    imshow("fitted",readed(r));
+					waitKey(0);
+					writer<<readMeanHueAndMoments(readed(r));
+					writer<<readStdDevHue(readed(r));
+					writer<<computeEntropy(readed(r))<<",";
+					writer<<computeRectangleRatio(readed(r))<<",";
 					
 				}else{
 					reader.open(s1.str(),ios::in);
@@ -160,9 +167,7 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
 					reader.clear();
 					reader.close();
 				}
-				
-				
-				s1.str("");
+			s1.str("");
 			  }
             }
                 closedir(pDIR);	

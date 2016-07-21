@@ -15,8 +15,7 @@
 #include "Classiwekation.h"
 #include "Constants.h"
 #include "FeatExtract.h"
-#include "slic.h"
-#define FOLDER  "../DatasetLippi"
+#define FOLDER  "../training_set/imgNAO/"
 
 #define WRITE 0
 using namespace cv;
@@ -24,191 +23,255 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-#if 0
+#if 0  //CLASSIFICAZIONE
 	Classiwekation weka ;
-	double result = weka.classify("0.046135, 0.00243138,4.845e-008,1.22376e-010,3.1175e-010,3.34319e-020,-6.68581e-014,5.08932e-020,43.8282,4.54863,21177,396,?");
-	cout << "Class =" << result << endl;
-	result = weka.classify("0.0511247, 0.000900998,1.61258e-009,4.42675e-013,2.07049e-012,1.88707e-024,-3.97962e-017,-6.06773e-025,16.2016,5.16613,26625.5,309,?");
-	cout << "Class =" << result << endl;
-	result = weka.classify("0.0389009, 0.00130581,1.40611e-007,1.74627e-010,6.37281e-010,2.11688e-019,2.34569e-013,-1.96148e-020,33.268,1.68026,18561.5,623,?");
-	cout << "Class =" << result << endl;
-	result = weka.classify("0.0371679, 0.0010112,1.75163e-007,8.84218e-011,2.84371e-011,1.32563e-021,1.19016e-014,5.25427e-022,35.3591,2.84863,10448,509,?");
-	cout << "Class =" << result << endl;
-#endif
-#if 1
-	Mat image; 
-	for(int i=1;i<121;i++){
-		stringstream img_file;
-		vector<Mat> rectangles;
-		vector<Blob> blob;
-		img_file<<"DATASET_18_07\\im ("<<i<<").jpg"; // 12 28 42
-		cout << img_file.str() << endl;
-		image = imread(img_file.str(),  IMREAD_COLOR);
-		resize(image, image, Size(WIDTH,HEIGH), 0, 0, INTER_NEAREST);
-		detect2(image,rectangles, blob);
+	stringstream img_file;// = "data_set_27_05/123.jpg";
+	stringstream feat;
+	Mat image, toShow; vector<Blob> blob; vector<Mat> rectangles;
+	FeatExtract fe;
 
-/*		stringstream s;
+	for(int i=20;i<124;i++){
+		img_file<<FOLDER<<"im ("<<i<<").jpg";
+		
+		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
+		img_file.str(string());
+
+	/*	if(image.rows != HEIGH ||image.cols !=WIDTH)
+			resize(image, image, Size(WIDTH,HEIGH), 0, 0, INTER_NEAREST);*/
+	
+		if (!image.data) // Check for invalid input
+		{	cout << "Could not open or find the image" << std::endl;
+			return -1;}
+		
+		rectangles.clear();
+		detect2(image,rectangles,blob);
+		
+		for(int j=0;j<blob.size();j++){
+				std::string winner;
+			/*Qui eventuale codice sui rettangoli o sui blob*/
+
+			feat<<fe.extractDuringMovement(blob[j],false);
+			cout<<feat.str()<<endl;
+			double result = weka.classify(feat.str());
+			feat.str("");
+			if(result==1)
+				winner = "mela rossa";
+			else if (result==2)
+				winner = "mela gialla";
+			else if(result==3)
+				winner = "bicchiere";
+			else if(result==4)
+				winner = "tazzina";
+			else if(result==5)
+				winner ="nessuno";
+			rectangle(image,blob[j].rectangles.tl(),blob[j].rectangles.br(),Scalar(0,0,255));
+			putText(image,winner,blob[j].rectangles.tl(),FONT_HERSHEY_PLAIN, 1.0, CV_RGB(0, 255, 0), 2.0);
+			result = 0;
+
+
+			/*data_file<<FOLDER<<"detectionNoMorph/"<<"img"<<i<<"_"<<j<<".txt";
+			writer.open(data_file.str(),ios::out);
+			writer<<blobs[i-1].area[j]<<","<<blobs[i-1].distance[j]<<endl; //NON DIMENTICARE: i-1 perché le immagini partono da 1
+			img_file<<FOLDER<<"detectionNoMorph/"<<"img"<<i<<"_"<<j<<".jpg";
+			imwrite(img_file.str(),rectangles[j]);
+			img_file.str("");
+			data_file.str("");
+			writer.clear();
+			writer.close();*/
+		}
+		blob.clear();
+		imshow("out",image);
+		image = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+		waitKey(0);
+		
+	}
+
+		
+#endif
+#if 0 // Estrazione Oggetti di interesse
+	stringstream img_file;// = "data_set_27_05/123.jpg";
+	stringstream data_file;
+	Mat image;vector<Blob> blob; vector<Mat> rectangles;
+	std::ofstream writer;
+	
+	for(int i=21;i<181;i++){
+		img_file<<FOLDER<<"im ("<<i<<").jpg";
+		
+		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
+		img_file.str(string());
+
+	 	if(image.rows != 480 ||image.cols !=640)
+			resize(image, image, Size(640,480), 0, 0, INTER_NEAREST);
+	
+		if (!image.data) // Check for invalid input
+		{
+			cout << "Could not open or find the image" << std::endl;
+			return -1;
+		}
+		rectangles.clear();
+		detect2(image,rectangles,blob);
+		
+		for(int j=0;j<blob.size();j++){
+			/*Qui eventuale codice sui rettangoli o sui blob*/
+			
+			data_file<<FOLDER<<"detection/"<<"img"<<i<<"_"<<j<<".txt";
+			writer.open(data_file.str(),ios::out);
+			writer<<blob[j].area<<","<<blob[j].distance<<endl; //NON DIMENTICARE: i-1 perché le immagini partono da 1
+			img_file<<FOLDER<<"detection/"<<"img"<<i<<"_"<<j<<".jpg";
+			imwrite(img_file.str(),blob[j].cuttedWithBack);
+			img_file.str("");
+			data_file.str("");
+			writer.clear();
+			writer.close();
+		}
+		blob.clear();
+		image = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	}
+
+	waitKey(0);
+
+#endif
+#if 0
+	stringstream img_file; img_file<< "data_set_27_05/47.jpg";
+	Mat image; vector<Mat> rectangles;
+	image = imread(img_file.str(),  IMREAD_COLOR)+1;
+
+	if(image.rows < 960 ||image.cols <1280)
+			resize(image, image, Size(1280,960), 0, 0, INTER_LINEAR);
+	
+		if (!image.data) // Check for invalid input
+		{
+			cout << "Could not open or find the image" << std::endl;
+			return -1;
+		}
+		detect2(image,rectangles);
+		stringstream s;
 	for(int i=0;i<rectangles.size();i++){
 		s<<i;
 		namedWindow(s.str(), WINDOW_AUTOSIZE);
 		imshow(s.str(),rectangles[i]);
 		s.str(std::string());
-	}*/
-		imshow("anc",image);
-			waitKey(400);
-/*		for(int k=0; k<blob.cuttedImages.size(); k++){
-			stringstream s;
-			s << "full" << k;
-			imshow(s.str(),blob.cuttedImages.at(k));
-			waitKey(1000); /// Wait for a keystroke in the window
-		}*/
 	}
+	waitKey(0); // Wait for a keystroke in the window
 #endif
+#if 0 //Estrazione Features
+	FeatExtract fe;
+	vector<string> dirs,types;
+/*	dirs.push_back("../detection/mela_rossa/");
+	types.push_back("mela_rossa");
+	dirs.push_back("../detection/mela_gialla/");
+	types.push_back("mela_gialla");
+	dirs.push_back("../detection/bicchiere/");
+	types.push_back("bicchiere");
+	dirs.push_back("../detection/tazzina/");
+	types.push_back("tazzina");
+
+	fe.extract(dirs,"featWeka.csv",types,false);
+	*/
+	dirs.push_back("../training/mela_rossa/");
+	types.push_back("mela_rossa");
+	dirs.push_back("../training/mela_gialla/");
+	types.push_back("mela_gialla");
+	dirs.push_back("../training/bicchiere/");
+	types.push_back("bicchiere");
+	dirs.push_back("../training/tazzina/");
+	types.push_back("tazzina");
+	dirs.push_back("../training/nao/");
+	types.push_back("nao");
+
+
+	fe.extract(dirs,"featWeka17_07Refit.csv",types,false);
 	
+	waitKey(0);
+	system("pause");
+
+#endif
+#if 0
+	NaoUtils n;
+	n.explore();
+	system("pause");
+#endif
 #if 0
 	TheWalkingNao twn;
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles; double angle=-1;
 	Mat sharp;
-	for(int i=2;i<27;i++){
-		img_file<<"Markers\\MarkerVerdi\\im ("<<i<<").jpg";
+	for(int i=1;i<64;i++){
+		img_file<<"Markers\\invert\\im ("<<i<<").jpg";
 		cout<<img_file.str()<<endl;
 		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
 		img_file.str(string());
+
+		if(image.rows < 640 ||image.cols <480)
+			resize(image, image, Size(640,480), 0, 0, INTER_LINEAR);
 		twn.ArucoFind(image,angle,false);
 		cout<<"Angolo" <<angle<<endl;
-		//imshow("img",image);
-		//waitKey(0);
+		imshow("img",image);
+		waitKey(0);
+	
 	}
 #endif
+
+/*DA QUI IN POI CODIFICHIAMO IL COMPORTAMENTO DI NAO*/
 #if 0
-	cv::Mat img, result;
-for(int i=1;i<121;i++){
-		stringstream img_file;
-		img_file<<"imgNao\\im ("<<i<<").jpg";
-		img = imread(img_file.str());
-	int numSuperpixel = 200;
+	TheWalkingNao twn; char* ip = "192.168.88.202";
+	NaoUtils nu; ALVideoDeviceProxy camProx(ip, NAOPORT);
+	twn.init(ip); vector<Mat> buff;
+	int keyPressed = 0;
+	twn.standUp(); 
+	double angle=0;;
+	while(cv::waitKey(1) != 'e'){
+		Mat image;
 
-	SLIC slic;
-	slic.GenerateSuperpixels(img, numSuperpixel);
-	if (img.channels() == 3) 
-		result = slic.GetImgWithContours(cv::Scalar(0, 0, 255));
-	else
-		result = slic.GetImgWithContours(cv::Scalar(128));
-
-	imshow("slic",result);
-	waitKey(1);
-}
-#endif
-#if 0
-	cv::Mat img;
-for(int i=1;i<121;i++){
-		stringstream img_file;
-		img_file<<"DatasetLippi\\im ("<<i<<").jpg";
-		img = imread(img_file.str());
-int width = img.cols;
-int height = img.rows;
-resize(img, img, Size(width/1.5,height/1.5), 0, 0, INTER_NEAREST);
-width = img.cols;
-height = img.rows;
-int sz = width*height;
-int m_compactness = 5;
-int m_spcount = 200;
-int numlabels = 5;
-int* labels = new int[sz];
-SLIC slic;
-//---------------------------------------------------------
-if(m_spcount < 20 || m_spcount > sz/4) m_spcount = sz/200;//i.e the default size of the superpixel is 200 pixels
-if(m_compactness < 1.0 || m_compactness > 80.0) m_compactness = 20.0;
-//---------------------------------------------------------
-
-UINT* imgBuffer = new UINT[sz];
-cv::Mat newImage;
-cv::cvtColor(img, newImage, CV_BGR2BGRA);
-memcpy( imgBuffer, (UINT*)newImage.data, sz*sizeof(UINT) );
-
-slic.DoSuperpixelSegmentation_ForGivenNumberOfSuperpixels(imgBuffer, width, height, labels, numlabels, m_spcount, m_compactness);
-//slic.DoSuperpixelSegmentation_ForGivenSuperpixelSize(img, width, height, labels, numlabels, 10, m_compactness);//demo
-slic.DrawContoursAroundSegments(imgBuffer, labels, width, height, Scalar(0,0,0));
-vector<SuperPixel > set;
-bool** matrix = NULL;
-slic.GetPixelsSet(img, labels, width, height, numlabels, set, matrix);
-
-#if 0
-for(int i=0; i<set.size(); i++){
-	cv::Mat rr = cv::Mat::zeros(height,width,CV_8U);
-	vector<cv::Point > component = set.at(i).points;
-	Mat superpixel = cv::Mat::zeros(1,component.size(),CV_8UC3);
-	int idx = 0;
-	for(int j=0; j<component.size(); j++){
-		cv::Point p = component.at(j);
-			rr.at<uchar>(p.y,p.x) = 255;
-			superpixel.at<Vec3b>(0,idx) = img.at<Vec3b>(p.y,p.x);
-			idx++;
+		try{
+		image = nu.see(camProx);
+		//buff.push_back(image);
+		twn.moveNearMarker(image, nu, camProx);
+		/*if(angle>0 && angle <90 && !twn.isMoving())
+			twn.moveRight(0.2,angle);
+		else if(angle >90 && angle <180 && !twn.isMoving())
+			twn.moveLeft(0.2,angle);
+		else if(!twn.isMoving()){ twn.moveForward(0.1); angle = 0;}*/
+		}catch(std::exception& e){cout<<e.what()<<endl;twn.restNow();		}
 	}
-	for(int kk = 0; kk<numlabels; kk++){
-		if(matrix[i][kk] || matrix[kk][i]){
-			vector<cv::Point > component = set.at(kk).points;
-			int value = rand() %175+80;
-			for(int j=0; j<component.size(); j++){
-				cv::Point p = component.at(j);
-				rr.at<uchar>(p.y,p.x) = value;			
-			}
-		}
+	twn.restNow();
+#endif
+#if 0
+	NaoUtils nu; TheWalkingNao twn;
+//	twn.walk(0.0,0.0);
+	nu.takeSomePhotos("calib/");
+#endif
+	SimpleBlobDetector::Params params;
+	params.minThreshold = 150;
+	params.maxThreshold = 220;
+	params.thresholdStep = 2;
+	params.filterByArea =false;
+	params.maxArea = 10000;
+	params.minArea = 500 ;
+	params.filterByInertia = false;
+	params.maxInertiaRatio = 0.5;
+	SimpleBlobDetector detector(params);
+
+ 
+// Draw detected blobs as red circles.
+// DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures the size of the circle corresponds to the size of blob
+
+	Mat image;
+	stringstream img_file;
+	for(int i=1;i<64;i++){
+			std::vector<KeyPoint> keypoints;
+			
+		img_file<<"blobs\\im ("<<i<<").jpg";
+		cout<<img_file.str()<<endl;
+		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
+		img_file.str(string());
+		detector.detect( image, keypoints);
+		Mat im_with_keypoints;
+		drawKeypoints( image, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+		imshow("blobs",im_with_keypoints);
+		waitKey(0);
+
 	}
-	cv::imshow("ewwiwa",rr);
-	cv::waitKey(300);
-}
-
-//if(labels) delete [] labels;
-cv::Mat result(height, width, CV_8UC4);
-memcpy(result.data, imgBuffer, sz*sizeof(UINT));
-cvtColor(result, result, CV_BGRA2BGR);
-//picHand.SavePicture(imgBuffer, width, height, picvec[k], saveLocation, 1, "_SLIC");// 0 is for BMP and 1 for JPEG)
-//if(img) delete [] img;
-imshow("abc",result);
-waitKey(1);
-
-Mat bands[3];
-split(result,bands);
-Mat mask1 = bands[0] == 0;
-Mat mask2 = bands[1] == 0;
-Mat mask3 = bands[2] == 0;
-Mat mask4 = Mat::zeros(img.size(),CV_8U);
-for(int idx = 0; idx < mask4.rows; idx++){
-	mask4.at<uchar>(idx,0) = 255;
-	mask4.at<uchar>(idx,1) = 255;
-	mask4.at<uchar>(idx,mask4.cols-1) = 255;
-	mask4.at<uchar>(idx,mask4.cols-2) = 255;
-}
-for(int idx = 0; idx < mask4.cols; idx++){
-	mask4.at<uchar>(0,idx) = 255;
-	mask4.at<uchar>(1,idx) = 255;
-	mask4.at<uchar>(mask4.rows-1,idx) = 255;
-	mask4.at<uchar>(mask4.rows-2,idx) = 255;
-}
-bitwise_and(mask1,  mask2, mask2);
-bitwise_and(mask3,  mask2, mask3);
-mask4 = mask3 + mask4;
-imshow("abcd",mask4);
-waitKey(1);
-vector< vector<Point> > contours;
-findContours(mask4, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
-Mat toReturn = img.clone();
-for(int uu = 0; uu<contours.size(); uu++){
-	drawContours(toReturn,contours,uu,Scalar(rand() % 256,rand() % 256,rand() % 256),CV_FILLED);
-}
-
-imshow("abcde",toReturn);
-waitKey(1);
-cout << i << endl;
-#endif
-}
-
-#endif
-
-
-
 /*
 whilte non siamo a fine percorso
 leggi immagine della camera
