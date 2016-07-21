@@ -34,7 +34,19 @@ using namespace aruco;
 using namespace AL;
 using namespace gpu;
 
-enum Direction {FORWARD,LEFT,RIGHT};
+enum Direction {UP, RIGHT, DOWN, LEFT, STOP};
+extern char* s_Direction[];
+struct MarkersInfo{
+	Direction dir;
+	Point center;
+	Mat marker;
+	CvRect rect;
+	bool isValid;
+	vector<Point> contour;
+	MarkersInfo(){
+		isValid = false;
+	}
+};
 class TheWalkingNao
 {
 private:
@@ -70,7 +82,7 @@ public:
 	bool isMoving();
 	void moveOnX(float meters);
 	void moveUpNeck();
-	Mat pathfinder(cv::Mat orig);
+	bool pathfinder(cv::Mat orig, Direction&, Point&);
 	void moveDownNeck(float PitchAngle);
 	void walk(float X, float Y, float angle);
 	void infiniteWalk(float velX, float velY, float);
