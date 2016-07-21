@@ -1,8 +1,9 @@
 #include "TheWalkingNao.h"
 #define NAO 1
+char* s_Direction[] = {"UP", "RIGHT", "DOWN", "LEFT", "STOP"};
 
 TheWalkingNao::TheWalkingNao(){
-/* Configuration */
+	/* Configuration */
 	_ImageSharp = true;
 	_SharpSigma = 20;
 	_SharpThreshold = 5;
@@ -10,24 +11,24 @@ TheWalkingNao::TheWalkingNao(){
 	_medianBlur = 11;
 	_markSize = 0.105;
 	_invert = true;
-/* Init */
+	/* Init */
 	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
 	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);/*
-		cameraMatrix.at<float>(0,0)=1406.9968064577436;
-	cameraMatrix.at<float>(0,1)=0;
-	cameraMatrix.at<float>(0,2)=639.5;
-	cameraMatrix.at<float>(1,0)=0;
-	cameraMatrix.at<float>(1,1)=1406.9968064577436;
-	cameraMatrix.at<float>(1,2)=479.5;
-	cameraMatrix.at<float>(2,0)=0;
-	cameraMatrix.at<float>(2,1)=0;
-	cameraMatrix.at<float>(2,2)=1;
-	distorsionCoeff.at<float>(0,0)=-0.48289968517339044;;
-	distorsionCoeff.at<float>(1,0)=0.88748438503520599;
-	distorsionCoeff.at<float>(2,0)=0;
-	distorsionCoeff.at<float>(3,0)=0;
-	distorsionCoeff.at<float>(4,0)=0.33637972422994983;
-*/
+												cameraMatrix.at<float>(0,0)=1406.9968064577436;
+												cameraMatrix.at<float>(0,1)=0;
+												cameraMatrix.at<float>(0,2)=639.5;
+												cameraMatrix.at<float>(1,0)=0;
+												cameraMatrix.at<float>(1,1)=1406.9968064577436;
+												cameraMatrix.at<float>(1,2)=479.5;
+												cameraMatrix.at<float>(2,0)=0;
+												cameraMatrix.at<float>(2,1)=0;
+												cameraMatrix.at<float>(2,2)=1;
+												distorsionCoeff.at<float>(0,0)=-0.48289968517339044;;
+												distorsionCoeff.at<float>(1,0)=0.88748438503520599;
+												distorsionCoeff.at<float>(2,0)=0;
+												distorsionCoeff.at<float>(3,0)=0;
+												distorsionCoeff.at<float>(4,0)=0.33637972422994983;
+												*/
 	cameraMatrix.at<float>(0,0)=558.570339530768;
 	cameraMatrix.at<float>(0,1)=0;
 	cameraMatrix.at<float>(0,2)=308.885375457296;
@@ -42,7 +43,7 @@ TheWalkingNao::TheWalkingNao(){
 	distorsionCoeff.at<float>(2,0)=0.0038281538281731;
 	distorsionCoeff.at<float>(3,0)=-0.00551104078371959;
 	distorsionCoeff.at<float>(4,0)=0;
-/*	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
+	/*	Mat distorsionCoeff=cv::Mat::zeros(5,1,CV_32FC1);
 	Mat cameraMatrix=cv::Mat::eye(3,3,CV_32FC1);
 	cameraMatrix.at<float>(0,0)=1.2013236249865872e+003;
 	cameraMatrix.at<float>(0,1)=0;
@@ -93,19 +94,19 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 		ss << "take\\mask\\image" << i <<".jpg";
 		imwrite(ss.str(),mask1);	
 	}
-	
-	  vector<Marker> Markers;
-	  CvDrawingUtils u;
-    try{
-/* Declaration */
-        MarkerDetector MDetector;
-      
-        Mat grayImage, croppedImage;
+
+	vector<Marker> Markers;
+	CvDrawingUtils u;
+	try{
+		/* Declaration */
+		MarkerDetector MDetector;
+
+		Mat grayImage, croppedImage;
 		Mat thresholded = Mat::zeros(img.size(),img.type());
 		Mat toReturn = img.clone();
 		vector< vector<Point> > contours;
 		static int k = 0;
-/* Marker Detect */
+		/* Marker Detect */
 		if(_ImageSharp){
 			Mat blurred; 
 			GaussianBlur(img, blurred, Size(), _SharpSigma, _SharpSigma);
@@ -114,31 +115,31 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 			img.copyTo(sharpened, lowContrastMask);
 			sharpened.copyTo(img);
 		}
-/*			if(_ImageSharp){
-			GpuMat blurred, src, dest, sharpened;
-			Mat lowCM, ssharp, srcMat;
+		/*			if(_ImageSharp){
+		GpuMat blurred, src, dest, sharpened;
+		Mat lowCM, ssharp, srcMat;
 
-			src.upload(img);
-			gpu::GaussianBlur(src, blurred, Size(), _SharpSigma, _SharpSigma);
-			GpuMat lowContrastMask;
-			gpu::absdiff(src,blurred,lowContrastMask);
-			gpu::multiply(src, (1+_SharpAmount), src);
-			gpu::multiply(blurred, (-_SharpAmount), blurred);
-			gpu::add(src, blurred, sharpened); 		
-			lowContrastMask.download(lowCM);
-			sharpened.download(ssharp);
-			src.download(srcMat);
+		src.upload(img);
+		gpu::GaussianBlur(src, blurred, Size(), _SharpSigma, _SharpSigma);
+		GpuMat lowContrastMask;
+		gpu::absdiff(src,blurred,lowContrastMask);
+		gpu::multiply(src, (1+_SharpAmount), src);
+		gpu::multiply(blurred, (-_SharpAmount), blurred);
+		gpu::add(src, blurred, sharpened); 		
+		lowContrastMask.download(lowCM);
+		sharpened.download(ssharp);
+		src.download(srcMat);
 
-			lowCM = lowCM < _SharpThreshold;
-			srcMat.copyTo(ssharp, lowCM);
-			ssharp.copyTo(img);
+		lowCM = lowCM < _SharpThreshold;
+		srcMat.copyTo(ssharp, lowCM);
+		ssharp.copyTo(img);
 		}*/
 #if NAO
-			MDetector.detect(img,Markers,camParams,_markSize,false);	
+		MDetector.detect(img,Markers,camParams,_markSize,false);	
 #else
-			MDetector.detect(img,Markers);	
+		MDetector.detect(img,Markers);	
 #endif
-/* for each marker, draw info and its boundaries in the image */
+		/* for each marker, draw info and its boundaries in the image */
 		for (unsigned int i=0;i<Markers.size();i++) {
 			double v1[] = {Markers[i].at(0).x, Markers[i].at(1).x, Markers[i].at(2).x, Markers[i].at(3).x};
 			double v2[] = {Markers[i].at(0).y, Markers[i].at(1).y, Markers[i].at(2).y, Markers[i].at(3).y};
@@ -153,7 +154,7 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 				}
 			}
 #if NAO
-/*
+			/*
 			cvtColor(img,thresholded,CV_BGR2GRAY);
 			threshold(thresholded, thresholded,220,255,THRESH_BINARY);
 			Size s = thresholded.size();
@@ -162,31 +163,31 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 			int minContour;
 			double distance = INT_MAX;
 			for (int idx = 0; idx < contours.size(); idx++){
-				vector<Point> border = contours.at(idx);
-				Point p(0,0); 
-				for(int jdx = 0; jdx < border.size(); jdx++){
-					p.x +=border.at(jdx).x;
-					p.y +=border.at(jdx).y;
-				}	
-				p.x /= border.size();
-				p.y /= border.size();
-				double currDist = cv::norm((Point)Markers[i].getCenter()-p);;
-				if(currDist < distance){
-					distance = currDist;
-					minContour = idx;
-				}	
+			vector<Point> border = contours.at(idx);
+			Point p(0,0); 
+			for(int jdx = 0; jdx < border.size(); jdx++){
+			p.x +=border.at(jdx).x;
+			p.y +=border.at(jdx).y;
+			}	
+			p.x /= border.size();
+			p.y /= border.size();
+			double currDist = cv::norm((Point)Markers[i].getCenter()-p);;
+			if(currDist < distance){
+			distance = currDist;
+			minContour = idx;
+			}	
 			}
 			drawContours(toReturn,contours,minContour,Scalar(0,0,0),CV_FILLED);
-*/		
+			*/		
 			Markers[i].draw(img,Scalar(0,0,255),2);
-			
+
 			u.draw3dAxis(img,Markers[i],camParams);		
 			cout<<"MARK  "<<Markers[i]<<endl;
-				//TODO:
-				/*Aruco rileva UN solo Marker per ID, è possibile che nella stessa scena vi siano
-				due marker, quindi l'idea è quella di utilizzare la posizione del centroide. Questa
-				cosa è da fare se e solo se abbiamo il problema del rilevamento fra più marker*/
-				//if(Markers[i].id == 136)
+			//TODO:
+			/*Aruco rileva UN solo Marker per ID, è possibile che nella stessa scena vi siano
+			due marker, quindi l'idea è quella di utilizzare la posizione del centroide. Questa
+			cosa è da fare se e solo se abbiamo il problema del rilevamento fra più marker*/
+			//if(Markers[i].id == 136)
 			angle = computeAngle(Markers[i],camParams);
 #else
 			Markers[i].draw(img,Scalar(0,0,255),2);
@@ -233,14 +234,14 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 					distance = eu_dist;
 				}
 			}
-				if(distance < 100){
-					Marker m = Marker(candidates.at(idx), OldMarkers[kdx]);
-					candidates.erase (candidates.begin()+idx);
-					trackMarkers.push_back(m);		
-				}
+			if(distance < 100){
+				Marker m = Marker(candidates.at(idx), OldMarkers[kdx]);
+				candidates.erase (candidates.begin()+idx);
+				trackMarkers.push_back(m);		
+			}
 		}
 		// TODO: aggiornare punti, inserire nuovi marker in vettore di output in funzione della direzione
-//		imshow("VERI",img);
+		//		imshow("VERI",img);
 
 		for(int i = 0; i<trackMarkers.size(); i++)
 			Markers.push_back(trackMarkers.at(i));
@@ -254,7 +255,7 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 		for(int i = 0; i<candidates.size(); i++)
 			MDetector.drawLine(img, candidates, i);
 
-//		imshow("AGGIUNTI",img);
+		//		imshow("AGGIUNTI",img);
 
 		CBlobResult blobs = CBlobResult( mask1 ,Mat(),8);
 		int bmax = 200;
@@ -268,158 +269,202 @@ vector<Marker> TheWalkingNao::ArucoFind(Mat img, double& angle, bool toRemoveMar
 			double angle =  blob.GetEllipse().angle;
 			CvRect rect = blob.GetBoundingBox();
 			//for(int k=0; k<Markers.size(); k++){
-//
-//			}
+			//
+			//			}
 			blobs.GetBlob(i)->FillBlob(mask1,CV_RGB(255,255,255),0,0,true);
 		}
-//		imshow("masked",mask1);
+		//		imshow("masked",mask1);
 		//GetBoundingBox
 		//CBlobGetOrientation
 
-		
+
 #endif	
-	//OldMarkers.clear();
-	for(int i = 0; i<Markers.size(); i++)
-		OldMarkers.push_back(Markers.at(i));	
-    }catch (std::exception &ex){cout<<"Exception :"<<ex.what()<<endl;}
+		//OldMarkers.clear();
+		for(int i = 0; i<Markers.size(); i++)
+			OldMarkers.push_back(Markers.at(i));	
+	}catch (std::exception &ex){cout<<"Exception :"<<ex.what()<<endl;}
 	return Markers;
 }
 int TheWalkingNao::pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
 {
-  int i, j, c = 0;
-  for (i = 0, j = nvert-1; i < nvert; j = i++) {
-    if ( ((verty[i]>testy) != (verty[j]>testy)) &&
-     (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-       c = !c;
-  }
-  return c;
+	int i, j, c = 0;
+	for (i = 0, j = nvert-1; i < nvert; j = i++) {
+		if ( ((verty[i]>testy) != (verty[j]>testy)) &&
+			(testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+			c = !c;
+	}
+	return c;
 }
 
-Mat TheWalkingNao::pathfinder(Mat img){
+Mat getRotatedRoi(Mat& image, RotatedRect rect, float angle) {
+	Mat M, src, rotated, cropped;
+	Size rect_size = rect.size;
+	if (rect.angle < -45.) {
+		angle += 90.0;
+		swap(rect_size.width, rect_size.height);
+	}
+	M = getRotationMatrix2D(rect.center, angle, 1.0);
+	warpAffine(image, rotated, M, image.size(), INTER_CUBIC);
+	getRectSubPix(rotated, rect_size, rect.center, cropped);
+	return cropped;
+}
+
+Mat getRotatedRoi(Mat& image, RotatedRect rect) {
+	return getRotatedRoi(image, rect, rect.angle);
+}
+
+bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center){
 	imshow("asd",img);
+	/* Dichiarazione */
+	Mat imgHSV;
+	vector<Mat> bands;
+	cvtColor(img,imgHSV, CV_BGR2HSV);
+	split(img,bands);
+	vector<MarkersInfo> _markers;
 	Mat gray, dest; cvtColor(img,gray,CV_BGR2GRAY);
 	double _minSize = 0.05;
 	double _maxSize = 0.5;
-
 	double minSize=_minSize*max(img.cols,img.rows)*4;
-    double maxSize=_maxSize*max(img.cols,img.rows)*4;
-	int otsuTRGB = getThreshVal_Otsu_8u(gray)+20;
+	double maxSize=_maxSize*max(img.cols,img.rows)*4;
+	Mat res = Mat(img.size(), img.type()); res.setTo(255);
+	/* Detect Blob, filtraggio con OTSU */
+	int otsuTRGB = getThreshVal_Otsu_8u(bands[2])+20;
 	std::vector<cv::Point> approxCurve;
-
 	do{
-		threshold(gray,dest,otsuTRGB,255,THRESH_BINARY);
+		threshold(bands[2],dest,otsuTRGB,255,THRESH_BINARY);
 		otsuTRGB += 5;
 	}while(countNonZero(dest)>(0.145*gray.rows*gray.cols) & otsuTRGB<=255);
-
+	/* Filtraggio dimensione del blob */
 	CBlobResult blobs = CBlobResult( dest ,Mat(),4);
 	blobs.Filter( blobs, B_EXCLUDE, CBlobGetLength(), B_GREATER, 1000 );
-	blobs.Filter( blobs, B_EXCLUDE, CBlobGetLength(), B_LESS, 170 );
-/*	Mat mask1= Mat(img.size(),CV_8U);
-	mask1.setTo(0);
-	Mat mask2= Mat(img.size(),img.type());
-	mask2.setTo(0);
-	for(int i=0;i<blobs.GetNumBlobs();i++){
-		CBlob blob = blobs.GetBlob(i);
-		list<CBlobContour*> internals = blob.GetInternalContours();
-		list<CBlobContour*>::iterator it = internals.begin();
-		for(int k=0; k<internals.size(); k++){
-			std::vector<cv::Point> points = (*it)->GetContourPoints();
-			if((points.size()>minSize && points.size()<maxSize))
-				blobs.GetBlob(i)->FillBlob(mask1,CV_RGB(255,255,255),0,0,true);
-			++it;
-		}
-	}
-	imshow("asd",mask1);
-	blobs = CBlobResult( mask1 ,Mat(),4);*/
-	Mat res = Mat(img.size(), img.type());
-	res.setTo(255);
-	vector<Mat> markers;
+	blobs.Filter( blobs, B_EXCLUDE, CBlobGetLength(), B_LESS, 60 );
+	/* Filtraggio per numero di lati */
 	for(int i=0;i<blobs.GetNumBlobs();i++){
 		double p2 = blobs.GetBlob(i)->Perimeter();
 		std::vector<vector<cv::Point> > quadrato = blobs.GetBlob(i)->GetExternalContour()->GetContours();
 		std::vector<cv::Point> curve; 
 		convexHull(quadrato.at(0), curve);
 		approxPolyDP(curve, curve, p2*0.04, true);
+		Mat deb = Mat(img.size(), img.type()); res.setTo(255);;
+		blobs.GetBlob(i)->FillBlob(deb,CV_RGB(255,255,255),0,0,true);
 		if(curve.size()==4){
 			CvRect rect = blobs.GetBlob(i)->GetBoundingBox();
 			//double area = blobs.GetBlob(i)->Area();
 			//double lato = (area/p2)*4;
 			double ratio = double(rect.width)/double(rect.height);
 			//if(ratio>= 0.90 && ratio <= 1.1){
-				blobs.GetBlob(i)->FillBlob(res,CV_RGB(255,255,255),0,0,true);
-				markers.push_back(res(rect));
-			//}
+			blobs.GetBlob(i)->FillBlob(res,CV_RGB(255,255,255),0,0,true);
+			MarkersInfo mk;
+			Mat rect_im = res(rect);
+			Mat white(rect_im.size(), rect_im.type(), Scalar(255,255,255));	
+			mk.marker = white-rect_im;
+			mk.center = blobs.GetBlob(i)->getCenter();
+			_markers.push_back(mk);
 		}
 	}
-
-	Mat white(img.size(), img.type(), Scalar(255,255,255));
-	res = white - res;
-	vector<vector<Point > > cont_marker;
-	for(int i = 0; i<markers.size(); i++){
+	/* Filtro per numero di elementi interni ad un quadrato, se c'è ne'è solo uno abbiamo un oggetto di interesse */
+	//	vector<vector<Point > > cont_marker;
+	for(int i = _markers.size()-1; i>=0; i--){
 		vector<vector<Point > > tmp_cont_marker;
 		Mat gray;
-		cvtColor(markers[i],gray,CV_BGR2GRAY);
+		cvtColor(_markers[i].marker,gray,CV_BGR2GRAY);
 		Mat kernelEr = getStructuringElement(MORPH_RECT,Size(7,7));
-		erode(gray,gray,kernelEr);
 		dilate(gray,gray,kernelEr);	
-		imshow("markers",gray);
-		findContours(gray,tmp_cont_marker,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE); 
-		if(tmp_cont_marker.size() != 1)
-			markers.erase(markers.begin()+i);
-		else
-			cont_marker.push_back(tmp_cont_marker[0]);
-	}
-	if(markers.size()>0){
-		for(int i = 0; i<cont_marker.size(); i++){
-			Mat gray;
-			cvtColor(markers[i],gray,CV_BGR2GRAY);
-			imshow("de",gray);
-			resize(gray,gray,Size(400,400));
-
-			cv::Moments m = moments(gray, false /* use true to binarize */);
-			Point cent(0.5*markers[i].cols,0.5*markers[i].rows);
-			Point mass_cent(m.m10/m.m00,m.m01/m.m00);
-			Point2f p = mass_cent-cent;
-			double angle = 180*(atan2(-p.y,p.x))/M_PI;
-			cout << angle << endl;
-
-
-
-
-
-			
-			cout << "CENT"<< cent << "NORM" << cv::norm(cent-mass_cent) << "MASS" << mass_cent<< endl;
-			if(cv::norm(cent-mass_cent)<5){
-				cout << "Abbiamo un cerchio" << endl;
-			}else{
-				cout << "Abbiamo una T" << endl;
-				if(cent.y < mass_cent.y)
-					cout << "VAI SOPRA" << endl;
-				if(cent.x < mass_cent.x)
-					cout << "VAI SINITRA" << endl;
-				if(cent.x > mass_cent.x)
-					cout << "VAI DESTRA" << endl;
-			}
-			
-			imshow("markersBUONI",gray);
+		erode(gray,gray,kernelEr);
+		findContours(gray.clone(),tmp_cont_marker,CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+		if(tmp_cont_marker.size() != 1 ){
+			_markers[i].isValid = false;
+		}
+		else{
+/*					for(int c = 0; c<tmp_cont_marker.size(); c++){
+			_markers[i].contour.insert(_markers[i].contour.end(), tmp_cont_marker[c].begin(), tmp_cont_marker[c].end());
+		}*/
+			gray.copyTo(_markers[i].marker);
+			_markers[i].isValid = true;
+			_markers[i].contour = tmp_cont_marker[0];
 		}
 	}
+	/* Se sono rimasti marker individuiamoli */
+	for(int i = 0; i<_markers.size(); i++){
+		if(!_markers[i].isValid) continue;
+		Mat gray = _markers[i].marker;
+		CBlobResult new_blobs = CBlobResult(gray ,Mat(),4);
+		double area = new_blobs.GetBlob(0)->Area();
+		cout << "area" << area << endl;
+		imshow("prima",gray);
+			waitKey(0);
+		if(area > 400){
+			RotatedRect rrect = minAreaRect(_markers[i].contour);
+			Mat rroi = getRotatedRoi(gray, rrect);
+			imshow("dopo",gray);
+			waitKey(0);
+			imshow("der",rroi);
+  			waitKey(0);
 
-	// TOTO ordinare rispetto alla distanza y
-
+			resize(rroi,rroi,Size(400,400));
+			double swidth=rroi.rows/2;
+			double w_density[2][2];
+			for (int _i=0; _i<2; _i++)
+			{	
+				for (int _j = 0; _j<2; _j++)
+				{
+					int Xstart=(_j)*(swidth);
+					int Ystart=(_i)*(swidth);
+					Mat square=rroi(Rect(Xstart,Ystart,swidth,swidth));
+					double numWhite = countNonZero(square);
+					w_density[_i][_j] = numWhite/(rroi.rows*rroi.rows/4);
+				}
+			}
+			double up = w_density[0][0] + w_density[0][1];
+			double right = w_density[0][1] + w_density[1][1];
+			double left = w_density[0][0] + w_density[1][0];
+			double down =  w_density[1][1] + w_density[1][0];
+			Direction angle = STOP;
+			double marker_ratio;
+			angle = (up>right && up>left && up>down)? UP:angle;
+			angle = (right>up && right>left && right>down)? RIGHT:angle;
+			angle = (left>right && left>up && left>down)? LEFT:angle;
+			angle = (down>right && down>left && down>up)? DOWN:angle;
+			switch(angle){
+				case UP:
+					marker_ratio = up/down;
+					break;
+				case DOWN:
+					marker_ratio = down/up;
+					break;
+				case LEFT:
+					marker_ratio = left/right;
+					break;
+				case RIGHT:
+					marker_ratio = right/left;
+					break;
+			}
+			std::vector<cv::Point> curve; 
+			convexHull(_markers[i].contour, curve);
+			double p2 = arcLength(_markers[i].contour, true);
+			approxPolyDP(_markers[i].contour, curve, p2*0.04, true);
+			if(curve.size()==3)
+				angle = STOP;
+			curve.clear();
+			_markers[i].dir = angle;
+			_markers[i].isValid = true;
+		}else{
+			_markers[i].isValid = false;
+		}
+	}
 	
-	waitKey(0);
-
-	/*			approxPolyDP(points, approxCurve, double (points.size())*0.05, true);
-				cout << approxCurve.size();
-				if(approxCurve.size() == 8){
-					cout << "trovato";
-				}*/
-
-	/*				Point center = Point(blob.MinX() + (( blob.MaxX() - blob.MinX() ) / 2.0), blob.MinY() + (( blob.MaxY() - blob.MinY() ) / 2.0));
-		double angle =  blob.GetEllipse().angle;
-		CvRect rect = blob.GetBoundingBox();*/
-	return res;
+	bool foundSomethingIWantToShow = false;
+	int dist = INT_MAX;
+	for(int ii = 0; ii<_markers.size(); ii++){
+		if(!_markers[ii].isValid) continue;
+		if(dist>_markers[ii].center.y /*&& _markers.center.y < soglia */){
+			dist = _markers[ii].center.y;
+			direction = _markers[ii].dir;
+			center = _markers[ii].center;
+			foundSomethingIWantToShow = true;
+		}
+	}
+	return foundSomethingIWantToShow;
 }
 
 double TheWalkingNao::computeAngle(Marker m, CameraParameters cam){
@@ -465,80 +510,80 @@ void TheWalkingNao::init(const char* robotIP){
 }
 void TheWalkingNao::standUp() {
 	/* required position before moving */
- 	robotPosture->goToPosture("StandInit", 0.5);
- }
- 
- void TheWalkingNao::moveLeft(float meters,double angle) {
- 	/* moves to the left, rotating torso 90 deg. counter-clockwise */
+	robotPosture->goToPosture("StandInit", 0.5);
+}
+
+void TheWalkingNao::moveLeft(float meters,double angle) {
+	/* moves to the left, rotating torso 90 deg. counter-clockwise */
 	motion->moveTo(0,0,angle);
- 	motion->moveTo(meters, 0, 0);
- }
- 
- void TheWalkingNao::moveRight(float meters,double angle) {
- 	/* moves to the right, rotating torso 90 deg. clockwise */
+	motion->moveTo(meters, 0, 0);
+}
+
+void TheWalkingNao::moveRight(float meters,double angle) {
+	/* moves to the right, rotating torso 90 deg. clockwise */
 	motion->moveTo(0, 0, -angle);
- 	motion->moveTo(meters, 0, 0);
- }
- 
- void TheWalkingNao::moveForward(float meters) {
- 	/* moves forward, without torso rotation */
-    AL::ALValue val = motion->getMoveConfig("Max");
-	 motion->moveTo(meters, 0, 0);//,val);//{ {"MaxStepX",0.02} , {"MaxStepY",0.101} });
- }
+	motion->moveTo(meters, 0, 0);
+}
 
- void TheWalkingNao::rotate(float angle){
-	 motion->post.moveTo(0, 0, angle);
- }
- void TheWalkingNao::walk(float X, float Y, float angle){
-	 AL::ALValue val = motion->getMoveConfig("Default");
-	 val[0][1] = 0.06;
-	 val[3][1] = 0.5;   //Freq
+void TheWalkingNao::moveForward(float meters) {
+	/* moves forward, without torso rotation */
+	AL::ALValue val = motion->getMoveConfig("Max");
+	motion->moveTo(meters, 0, 0);//,val);//{ {"MaxStepX",0.02} , {"MaxStepY",0.101} });
+}
 
-//	 val[0][1] = 0.020; //DefX
-//	 val[2][1] = 0.101; //DefY
-//	 val[3][1] = 0.2;   //DefZ
-//	 val[4][1] = 0.5;   //Freq
-	
-	 motion->post.moveTo(X,Y,angle,val);
- }
- void TheWalkingNao::infiniteWalk(float velX, float velY, float angle){
-	 AL::ALValue val = motion->getMoveConfig("Default");;
-     val[0][1] = 0.06;
-	 val[3][1] = 0.5;   //Freq
-	
-	 motion->post.move(velX,velY,angle, val);
- }
-  void TheWalkingNao::infiniteRotate(float velTheta){
-	 AL::ALValue val = motion->getMoveConfig("Default");
-     val[0][1] = 0.020; //DefX
-	 val[2][1] = 0.101; //DefY
-	 val[3][1] = 0.2;   //DefZ
-	 val[4][1] = 0.5;   //Freq
-	 
+void TheWalkingNao::rotate(float angle){
+	motion->post.moveTo(0, 0, angle);
+}
+void TheWalkingNao::walk(float X, float Y, float angle){
+	AL::ALValue val = motion->getMoveConfig("Default");
+	val[0][1] = 0.06;
+	val[3][1] = 0.5;   //Freq
 
-	 motion->post.move(0,0,velTheta,val);
- }
+	//	 val[0][1] = 0.020; //DefX
+	//	 val[2][1] = 0.101; //DefY
+	//	 val[3][1] = 0.2;   //DefZ
+	//	 val[4][1] = 0.5;   //Freq
+
+	motion->post.moveTo(X,Y,angle,val);
+}
+void TheWalkingNao::infiniteWalk(float velX, float velY, float angle){
+	AL::ALValue val = motion->getMoveConfig("Default");;
+	val[0][1] = 0.06;
+	val[3][1] = 0.5;   //Freq
+
+	motion->post.move(velX,velY,angle, val);
+}
+void TheWalkingNao::infiniteRotate(float velTheta){
+	AL::ALValue val = motion->getMoveConfig("Default");
+	val[0][1] = 0.020; //DefX
+	val[2][1] = 0.101; //DefY
+	val[3][1] = 0.2;   //DefZ
+	val[4][1] = 0.5;   //Freq
+
+
+	motion->post.move(0,0,velTheta,val);
+}
 
 void TheWalkingNao::moveDownNeck(float PitchAngle){
-	 const AL::ALValue jointPitch = "HeadPitch";
-	 AL::ALValue stiffness = 1.0f;
-     AL::ALValue time = 1.0f;
-     motion->stiffnessInterpolation(jointPitch, stiffness, time);
-	 AL::ALValue targetAnglePitch = PitchAngle;
-     motion->angleInterpolation(jointPitch, targetAnglePitch,time, true);
+	const AL::ALValue jointPitch = "HeadPitch";
+	AL::ALValue stiffness = 1.0f;
+	AL::ALValue time = 1.0f;
+	motion->stiffnessInterpolation(jointPitch, stiffness, time);
+	AL::ALValue targetAnglePitch = PitchAngle;
+	motion->angleInterpolation(jointPitch, targetAnglePitch,time, true);
 }
 
 void TheWalkingNao::moveUpNeck(){
 	const AL::ALValue jointPitch = "HeadPitch";
-     AL::ALValue time = 1.0f;
-	 AL::ALValue targetAnglePitch = 0;
-     motion->angleInterpolation(jointPitch, targetAnglePitch,time, true);
+	AL::ALValue time = 1.0f;
+	AL::ALValue targetAnglePitch = 0;
+	motion->angleInterpolation(jointPitch, targetAnglePitch,time, true);
 }
 
 void TheWalkingNao::restNow() {
- 	/* moves forward, without torso rotation */
- 	motion->rest();
- }
+	/* moves forward, without torso rotation */
+	motion->rest();
+}
 bool TheWalkingNao::isMoving(){
 	return motion->moveIsActive();
 }
@@ -555,9 +600,24 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 	char prevState = 'Z';
 	char currState = 'C';
 	Point center;
+
+	infiniteWalk(WSPEED, 0,0);
+	while(cv::waitKey(1)!='e'){
+
+	static int i = 0;
+	i++;
+	stringstream ss;
+	ss << "_new\\AAAPBBBAAARZZZOSDFAAAVAOOO" << i <<".jpg";
+	imwrite(ss.str(),img);
+		img = nu.see(camProx);
+
+	}
+
+
+#if 0
 	do{		
 		markers = ArucoFind(img,angle,false);
-		
+
 		// Posizioniamo il target al centro dell'immagine, oppure dove si trova il marker
 		if(markers.size() !=0){
 			k=0;
@@ -581,8 +641,8 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 			_dir = LEFT;
 
 		cout<<center<<endl;
-	   /************|******|*****|*****|*****************
-	    *	75		|	   |     |	   |		75	    *
+		/************|******|*****|*****|*****************
+		*	75		|	   |     |	   |		75	    *
 		*			|	   |	 |	   |			    *
 		*			|	   |  C  |	   |		E		*
 		*	A		|	   |     |	   |				*
@@ -592,17 +652,17 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 		*	L		| 	   |	 |	   |		F		*
 		*	90	    | 	I  |  H  |	G  |		 		*
 		************|******|*****|*****|*****************/
-/*		bool A = X>0 && X<=100 && Y<=336;
+		/*		bool A = X>0 && X<=100 && Y<=336;
 		bool C = X>180 && X<=460 && Y<=336;
 		bool E = X>540 && X<=640 && Y<=336;
-*/
+		*/
 		bool A = X<=95;
 		bool C = X>95 && X<225;
 		bool E = X>=225;
 		//cout << "Curr "<< currState "Prev" << prevState << endl;
 
-				
-/*		bool A = X>0 && X<=100 && Y<=336;
+
+		/*		bool A = X>0 && X<=100 && Y<=336;
 		bool B = X>100 && X<=180 && Y<=336;
 		bool C = X>180 && X<=460 && Y<=336;
 		bool D = X>460 && X<=540 && Y<=336;
@@ -617,53 +677,53 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 			currState = 'C';		
 			//rectangle( img, Point(114,0),Point(207,150), Scalar(0,0,255), 2, 8, 0 ); //C
 		}
-	/*	if(H){
-			
-			prevState = currState;
-			currState = 'H';
-			
-			//rectangle( img, Point(113,150),Point(206,150), Scalar(0,0,255), 2, 8, 0 ); //H
+		/*	if(H){
+
+		prevState = currState;
+		currState = 'H';
+
+		//rectangle( img, Point(113,150),Point(206,150), Scalar(0,0,255), 2, 8, 0 ); //H
 		}	*/	
 		if(A && markers.size() !=0){		
 			prevState = currState;
 			currState = 'A';
 			//rectangle( img, Point(0,0),Point(75,150), Scalar(0,0,255), 2, 8, 0 ); //A
 		}
-/*		if(B){
-			prevState = currState;
-			currState = 'B';
+		/*		if(B){
+		prevState = currState;
+		currState = 'B';
 		}*/
 		/*if(L){
-			
-			prevState = currState;
-			currState = 'L';
-			//rectangle( img, Point(0,150),Point(75,150), Scalar(0,0,255), 2, 8, 0 );		 //L
+
+		prevState = currState;
+		currState = 'L';
+		//rectangle( img, Point(0,150),Point(75,150), Scalar(0,0,255), 2, 8, 0 );		 //L
 		}*/
-/*		if(I){
-		
-			prevState = currState;
-			currState = 'I';
+		/*		if(I){
+
+		prevState = currState;
+		currState = 'I';
 		}*/
 		if(E && markers.size() !=0){			
 			prevState = currState;
 			currState = 'E';
 			//rectangle( img, Point(246,0),Point(320,150), Scalar(0,0,255), 2, 8, 0 );   //E
 		}
-/*		if(D){
-		
-			prevState = currState;
-			currState = 'D';
+		/*		if(D){
+
+		prevState = currState;
+		currState = 'D';
 		}*/
 		/*if(F){
-			
-			prevState = currState;
-			currState = 'F';
-			//rectangle( img, Point(246,150),Point(320,240), Scalar(0,0,255), 2, 8, 0 ); //F
+
+		prevState = currState;
+		currState = 'F';
+		//rectangle( img, Point(246,150),Point(320,240), Scalar(0,0,255), 2, 8, 0 ); //F
 		}*/
-/*		if(G){
-			
-			prevState = currState;
-			currState = 'G';
+		/*		if(G){
+
+		prevState = currState;
+		currState = 'G';
 		}*/
 		bool _event = currState != prevState || k == 0;
 		if(_event){
@@ -675,18 +735,18 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 				// muovi avanti finchè in C
 				//waitKey(1000);
 			}
-/*			if(H){
-				cout<<"H"<<endl;
-				int localAngle = 0;
-				if(angle < 45 || angle>-45)
-					localAngle = -90;
-				if(angle >= 45 || angle<135)
-					localAngle = 0;
-				if(angle >= 135 || angle<-135)
-					localAngle = 90;
-				walk(WDIST, 0, localAngle);
-				// muovi in avanti di 30 cm / tunare
-				//waitKey(1000);
+			/*			if(H){
+			cout<<"H"<<endl;
+			int localAngle = 0;
+			if(angle < 45 || angle>-45)
+			localAngle = -90;
+			if(angle >= 45 || angle<135)
+			localAngle = 0;
+			if(angle >= 135 || angle<-135)
+			localAngle = 90;
+			walk(WDIST, 0, localAngle);
+			// muovi in avanti di 30 cm / tunare
+			//waitKey(1000);
 			}*/		
 			if(A){
 				cout<<"A"<<endl;
@@ -694,9 +754,9 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 				// ruota in senso antiorario finchè non B
 				//waitKey(1000);
 			}
-/*			if(B){
-				cout<<"B"<<endl;
-				infiniteWalk(0.5*WSPEED, 0.4*WSPEED,0); 
+			/*			if(B){
+			cout<<"B"<<endl;
+			infiniteWalk(0.5*WSPEED, 0.4*WSPEED,0); 
 			}*/
 			if(E){
 				cout<<"E"<<endl;
@@ -704,25 +764,25 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 				// ruota in senso orario finchè non D
 				//waitKey(1000);
 			}
-/*			if(D){
-				cout<<"D"<<endl;
-				infiniteWalk(0.5*WSPEED, -0.4*WSPEED,0);
+			/*			if(D){
+			cout<<"D"<<endl;
+			infiniteWalk(0.5*WSPEED, -0.4*WSPEED,0);
 			}*/
-/*			if(F){
-				cout<<"F"<<endl;
-				infiniteWalk(0,-WSPEED,0);
+			/*			if(F){
+			cout<<"F"<<endl;
+			infiniteWalk(0,-WSPEED,0);
 			}*/
-/*			if(G && ! G){
-				cout<<"G"<<endl;
-				infiniteWalk(0, -WSPEED,0);
+			/*			if(G && ! G){
+			cout<<"G"<<endl;
+			infiniteWalk(0, -WSPEED,0);
 			}*/
-/*			if(L){
-				cout<<"L"<<endl;
-				infiniteWalk(0,WSPEED,0);
+			/*			if(L){
+			cout<<"L"<<endl;
+			infiniteWalk(0,WSPEED,0);
 			}*/
-/*			if(I){
-				cout<<"I"<<endl;
-				infiniteWalk(0, WSPEED,0);
+			/*			if(I){
+			cout<<"I"<<endl;
+			infiniteWalk(0, WSPEED,0);
 			}*/
 		}
 		if(C & Y<120){
@@ -736,12 +796,12 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 			walk(0.5, 0.1*localAngle/90, localAngle*180/3.14);
 			while(isMoving()){};
 		}
-			_event = false;
-			//imshow("image_nao",img);
-			img = nu.see(camProx);
-		}while(cv::waitKey(1)!='e');
+		_event = false;
+		//imshow("image_nao",img);
+		img = nu.see(camProx);
+	}while(cv::waitKey(1)!='e');
 
-
+#endif
 	//	//if( markers.size() != 0){
 	//	//	if(markers[0].getCenter().y > HEIGH*0.8){
 	//	//		moveDownNeck(0.26);
@@ -786,10 +846,10 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 	//	}*/
 	//	/*distY=0;
 	//	moveForward(distY/2000);	*/
-	
- }
- 
- 
+
+}
+
+
 
 
 TheWalkingNao::~TheWalkingNao(void){}
