@@ -13,6 +13,8 @@
 #include <vector>
 #include <math.h>
 #include "NaoUtils.h"
+#include "BlobResult.h"
+#include "blob.h"
 // Aldebaran includes.
 #include <alerror/alerror.h>
 #include <alproxies/almotionproxy.h>
@@ -21,7 +23,7 @@
 #include <alvision/alimage.h>
 #include <alvision/alvisiondefinitions.h>
 #include <opencv2\gpu\gpu.hpp>
-#define WSPEED 0.2 /* m/s  */
+#define WSPEED 0.15 /* m/s  */
 #define RSPEED 0.1 /* rad/s */
 #define WDIST 0.2 /* meters */
 
@@ -32,7 +34,7 @@ using namespace aruco;
 using namespace AL;
 using namespace gpu;
 
-enum Direction {NORTH,SOUTH,WEST,OVEST, NORTHWEST,SOUTHWEST,SOUTHOVEST,NORDOVEST };
+enum Direction {FORWARD,LEFT,RIGHT};
 class TheWalkingNao
 {
 private:
@@ -68,8 +70,9 @@ public:
 	bool isMoving();
 	void moveOnX(float meters);
 	void moveUpNeck();
+	Mat pathfinder(cv::Mat orig);
 	void moveDownNeck(float PitchAngle);
-	void walk(float X, float Y);
+	void walk(float X, float Y, float angle);
 	void infiniteWalk(float velX, float velY, float);
 	void init(const char* robotIP);
 	~TheWalkingNao(void);

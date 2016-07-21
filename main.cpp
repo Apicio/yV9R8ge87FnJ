@@ -16,6 +16,8 @@
 #include "Constants.h"
 #include "FeatExtract.h"
 #include "slic.h"
+#include "BlobResult.h"
+#include "blob.h"
 #define FOLDER  "../DatasetLippi"
 
 #define WRITE 0
@@ -35,7 +37,30 @@ int main(int argc, char* argv[])
 	result = weka.classify("0.0371679, 0.0010112,1.75163e-007,8.84218e-011,2.84371e-011,1.32563e-021,1.19016e-014,5.25427e-022,35.3591,2.84863,10448,509,?");
 	cout << "Class =" << result << endl;
 #endif
-#if 1
+	#if 0
+ TheWalkingNao twn; char* ip = "192.168.88.202";
+ NaoUtils nu; ALVideoDeviceProxy camProx(ip, NAOPORT);
+ twn.init(ip); vector<Mat> buff;
+ int keyPressed = 0;
+ twn.standUp(); 
+ double angle=0;;
+ while(cv::waitKey(1) != 'e'){
+  Mat image;
+
+  try{
+  image = nu.see(camProx);
+  //buff.push_back(image);
+  twn.moveNearMarker(image, nu, camProx);
+  /*if(angle>0 && angle <90 && !twn.isMoving())
+   twn.moveRight(0.2,angle);
+  else if(angle >90 && angle <180 && !twn.isMoving())
+   twn.moveLeft(0.2,angle);
+  else if(!twn.isMoving()){ twn.moveForward(0.1); angle = 0;}*/
+  }catch(std::exception& e){cout<<e.what()<<endl;twn.restNow();  }
+ }
+ twn.restNow();
+#endif
+#if 0
 	Mat image; 
 	for(int i=1;i<121;i++){
 		stringstream img_file;
@@ -55,7 +80,6 @@ int main(int argc, char* argv[])
 		s.str(std::string());
 	}*/
 		imshow("anc",image);
-			waitKey(400);
 /*		for(int k=0; k<blob.cuttedImages.size(); k++){
 			stringstream s;
 			s << "full" << k;
@@ -64,14 +88,30 @@ int main(int argc, char* argv[])
 		}*/
 	}
 #endif
-	
+#if 1
+	TheWalkingNao twn;
+	stringstream img_file;// = "data_set_27_05/123.jpg";
+	Mat image;
+	Mat sharp;
+	for(int i=1;i<4;i++){
+		img_file<<"Markers\\New\\chiat ("<<i<<").jpg";
+		cout<<img_file.str()<<endl;
+		image = imread(img_file.str(),  IMREAD_COLOR); // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
+		img_file.str(string());
+		Mat t = twn.pathfinder(image);
+		imshow("anv",t);
+		waitKey(1);
+		//imshow("img",image);
+		//waitKey(0);
+	}
+#endif
 #if 0
 	TheWalkingNao twn;
 	stringstream img_file;// = "data_set_27_05/123.jpg";
 	Mat image; vector<Mat> rectangles; double angle=-1;
 	Mat sharp;
-	for(int i=2;i<27;i++){
-		img_file<<"Markers\\MarkerVerdi\\im ("<<i<<").jpg";
+	for(int i=26;i<29;i++){
+		img_file<<"Markers\\Invert\\im ("<<i<<").jpg";
 		cout<<img_file.str()<<endl;
 		image = imread(img_file.str(),  IMREAD_COLOR)+1; // Read the file. +1 perché nel rationing non vogliamo dividere per 0!
 		img_file.str(string());

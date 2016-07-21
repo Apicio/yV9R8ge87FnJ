@@ -18,7 +18,7 @@ typedef unsigned char t_chainCode;
 typedef std::vector<t_chainCode> t_chainCodeList;
 typedef std::vector<t_chainCodeList> t_chainCodeContours;	//In order to emulate CvSeq objects and to comply with opencv 2.0 interface
 //! Type of list of points
-typedef std::vector<cv::Point> t_PointList;
+typedef std::vector<cv::Point> t_PointList; 
 typedef std::vector<t_PointList> t_contours;
 
 
