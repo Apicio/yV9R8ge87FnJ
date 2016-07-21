@@ -68,9 +68,9 @@ Mat NaoUtils::see(ALVideoDeviceProxy camProx){
  
  std::string subscriberID = "subscriberID";
  /** Subscribe a client image requiring 640*480 and BGR colorspace.*/
- subscriberID = camProx.subscribeCamera("subscriberID",1, kVGA, kBGRColorSpace, 30);
+ subscriberID = camProx.subscribeCamera("subscriberID",1, kQVGA, kBGRColorSpace, 30);
  /** Create an cv::Mat header to wrap into an opencv image.*/
- cv::Mat imgHeader = cv::Mat(cv::Size(640, 480), CV_8UC3);
+ cv::Mat imgHeader = cv::Mat(cv::Size(320, 240), CV_8UC3);
 
 
   /** Main loop. Exit when pressing ESC.*/

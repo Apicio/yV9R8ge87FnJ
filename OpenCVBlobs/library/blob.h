@@ -184,7 +184,7 @@ public:
 	/*t_contours getPointsTouchingBorder(int border);*/
 	
 	int getNumJoinedBlobs(); // For joined blobs, return the number of sub-blobs.
-
+	void ClearContours();
 private:
 	//Just for multithread joining routine;
 	bool startPassed;
@@ -197,7 +197,7 @@ private:
 
 
 	//! Deallocates all contours
-	void ClearContours();
+	
 	//////////////////////////////////////////////////////////////////////////
 	// Blob contours
 	//////////////////////////////////////////////////////////////////////////

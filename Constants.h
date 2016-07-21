@@ -1,6 +1,6 @@
 #pragma once
-#define WIDTH 640 /* Do Not Change, this is for CamParams*/
-#define HEIGHT 480 /* Do Not Change, this is for CamParams*/
+#define WIDTH 320 /* Do Not Change, this is for CamParams*/
+#define HEIGHT 240 /* Do Not Change, this is for CamParams*/
 #define M_PI 3.14159265358979323846  /* pi */
 #include "opencv2\gpu\gpu.hpp"
 #include <opencv2\core\core.hpp>

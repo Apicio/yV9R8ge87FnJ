@@ -34,7 +34,7 @@ or implied, of Rafael Muñoz Salinas.
 #include <fstream>
 #include "arucofidmarkers.h"
 #include <valarray>
-#define SHARP 0
+#define SHARP 1
 #define SOGLIA 0.3
 using namespace std;
 using namespace cv;
