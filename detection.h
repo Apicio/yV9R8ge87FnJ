@@ -34,5 +34,6 @@ Mat sharpening(Mat in, double sigma);
 void imadjust(const Mat1b& src, Mat1b& dst, int tol, Vec2i in, Vec2i out);
 Mat computeRationedImage(vector<Mat> bands);
 double getThreshVal_Otsu_8u( const cv::Mat& _src );
+Rect refitToBorders(Mat region);
 
 #endif // DETECTION_H

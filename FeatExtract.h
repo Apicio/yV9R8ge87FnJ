@@ -35,6 +35,7 @@ public:
 	std::string readMeanHueAndMoments(cv::Mat image);
 	std::string readStdDevHue(cv::Mat image);
 	double computeEntropy(cv::Mat );
+        double computeRectangleRatio(cv::Mat image);
 	//double readBboxComparasion(cv::Mat image);	
 };
 
