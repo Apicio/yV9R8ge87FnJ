@@ -37,6 +37,7 @@ using namespace gpu;
 enum Direction {UP, RIGHT, DOWN, LEFT, STOP};
 extern char* s_Direction[];
 struct MarkersInfo{
+	Size img_size;
 	Direction dir;
 	Point center;
 	Mat marker;
@@ -58,7 +59,6 @@ private:
 	double _SharpAmount;
 	double _medianBlur;
 	double _markSize; /* m */
-
 	
 	ALMotionProxy* motion;
 	ALRobotPostureProxy* robotPosture;
@@ -85,6 +85,7 @@ public:
 	bool pathfinder(cv::Mat orig, Direction&, Point&);
 	void moveDownNeck(float PitchAngle);
 	void walk(float X, float Y, float angle);
+	void markerExplore(ALVideoDeviceProxy, NaoUtils );
 	void infiniteWalk(float velX, float velY, float);
 	void init(const char* robotIP);
 	~TheWalkingNao(void);
