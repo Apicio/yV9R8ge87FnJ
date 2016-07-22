@@ -13,9 +13,10 @@ struct Blob {
 	cv::Point centroid;
 	double distance;
 	cv::Mat cuttedImages;
-	cv::Mat* originalImage;
+	cv::Mat originalImage;
 	cv::Mat blobsImage;
 	cv::Mat cuttedWithBack;
 	cv::Rect rectangles;
+	cv::Rect resizedRect;
 };
 
