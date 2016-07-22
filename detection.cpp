@@ -160,7 +160,6 @@ Mat backgroundRemoval(Mat& img){
 	//bitwise_and(mask1,mask2,maskTOT);
 	maskTOT = mask1 + mask2;
 	return maskTOT;
-
 }
 
 Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
