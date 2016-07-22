@@ -27,12 +27,16 @@ class NaoUtils
 {
 
 public:
+	int currCameraID;
+	string subscriberID;
 	NaoUtils(void);
 	~NaoUtils(void);
 	void explore();
 	void writeImages(const std::string& naoIP, const std::string& path);
 	void takeSomePhotos(std::string path);
 	Mat see(ALVideoDeviceProxy );
-
+	Mat seeCam(ALVideoDeviceProxy camProx, ALValue&);
+	void camShutdown(ALVideoDeviceProxy camProx);
+	void camInit(ALVideoDeviceProxy camProx, int camID);
 };
 

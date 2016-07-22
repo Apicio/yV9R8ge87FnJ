@@ -1,9 +1,11 @@
 #pragma once
 #include <stdio.h>
+#include <vector>
 #include <jni.h>
 #include <string.h>
 #include <stdio.h>
 #include <iostream>
+#include <opencv2/opencv.hpp>
 #define MODEL "..\\JavaSrc\\TestStruct\\"
 using namespace std;
 
@@ -42,6 +44,7 @@ public:
 	Classiwekation(void);
 	void ClassTest(void);
 	double classify(string features);
+	double recognition(std::vector<cv::Mat>); // Ogni 3 abbiamo una direzione.
 	~Classiwekation(void);
 };
 

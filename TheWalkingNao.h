@@ -23,9 +23,8 @@
 #include <alvision/alimage.h>
 #include <alvision/alvisiondefinitions.h>
 #include <opencv2\gpu\gpu.hpp>
-#define WSPEED 0.15 /* m/s  */
-#define RSPEED 0.1 /* rad/s */
-#define WDIST 0.2 /* meters */
+
+#define RESIZE_COEFF 3
 
 #define PORT 9559
 
@@ -86,6 +85,7 @@ public:
 	void moveDownNeck(float PitchAngle);
 	void walk(float X, float Y, float angle);
 	void markerExplore(ALVideoDeviceProxy, NaoUtils );
+	vector<Mat>  objectsExplore(ALVideoDeviceProxy, NaoUtils );
 	void infiniteWalk(float velX, float velY, float);
 	void init(const char* robotIP);
 	void rotateAllign(ALVideoDeviceProxy camProx, NaoUtils nu);

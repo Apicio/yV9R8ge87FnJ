@@ -36,6 +36,15 @@ double Classiwekation::classify(string features){
 	return jobjRetData;
 }
 
+double Classiwekation::recognition(std::vector<cv::Mat>){
+	// in input abbiamo 9 foto, 3 per direzione.
+	// dtection per ognuna
+	// feature extraction
+	// clasidicazione su gruppi di 3
+	// si decide a maggioranza su una direzione
+	return 1;
+}
+
 void Classiwekation::ClassTest(void){
 	struct ControlDetail ctrlDetail;	
 	ctrlDetail.ID = 11;
