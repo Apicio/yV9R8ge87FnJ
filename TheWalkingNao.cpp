@@ -1,5 +1,6 @@
 #include "TheWalkingNao.h"
 #define NAO 1
+#define X100 0.35
 char* s_Direction[] = {"UP", "RIGHT", "DOWN", "LEFT", "STOP"};
 
 TheWalkingNao::TheWalkingNao(){
@@ -573,11 +574,43 @@ void TheWalkingNao::infiniteRotate(float velTheta){
 	motion->post.move(0,0,velTheta,val);
 }
 
+void TheWalkingNao::rotateAllign(ALVideoDeviceProxy camProx, NaoUtils nu){
+	cv::Mat img = nu.see(camProx);
+	Size img_size = img.size();
+	Direction d; Point p;
+	if(pathfinder(img,d,p)){
+		bool A = p.x<=X100*img_size.width;
+		bool E = p.x>=(1-X100)*img_size.width;
+		if(A){
+			cout << "ALLIGN ROTATE LEFT" << endl;
+			do{
+				walk(0, 0, 3.14/10);
+				this->motion->waitUntilMoveIsFinished();
+				pathfinder(img,d,p);
+				E = p.x>=(1-X100)*img_size.width;
+			}while(!E);
+		}else if(E){
+			cout << "ALLIGN ROTATE RIGHT" << endl;
+			do{
+				walk(0, 0, -3.14/10);
+				this->motion->waitUntilMoveIsFinished();
+				pathfinder(img,d,p);
+				A = p.x<=X100*img_size.width;
+			}while(!A);
+		}
+	}else{
+		cout << "Error in rotateAllign, do markerExplore Again" << endl;
+		markerExplore(camProx,nu);
+	}
+
+}
+
 void TheWalkingNao::markerExplore(ALVideoDeviceProxy camProx, NaoUtils nu){
 	const AL::ALValue jointYaw = "HeadYaw";
 	this->motion->waitUntilMoveIsFinished();
 	this->robotPosture->goToPosture("Stand",0.5);
-
+	Direction d; Point s;
+	Size img_size;
 	bool directions[3]; int i;
 	try {
 		AL::ALValue stiffness = 1.0f;
@@ -592,29 +625,40 @@ void TheWalkingNao::markerExplore(ALVideoDeviceProxy camProx, NaoUtils nu){
 			this->motion->angleInterpolation(jointYaw, targetAnglesYaw, targetTimesYaw, isAbsolute);
 			this->motion->waitUntilMoveIsFinished();
 			cv::Mat img = nu.see(camProx);
+			img_size = img.size();
 			imshow("explore",img);
-			waitKey(0);
-			Direction d; Point p;
-			if(pathfinder(img,d,p))
+			waitKey(0);		
+			if(pathfinder(img,d,s))
 				break;
 
 		}
+		bool A;
+		bool E;
 		this->robotPosture->goToPosture("StandInit",0.5);
 		cout<<"ENTRO NEL CASE: "<<i<<endl;
 		switch(i){
 		case 1:
-			walk(0.2,0,-3.14/3);
+			walk(0.2,0,-3.14/3); // Si allinea in rotazione solo se trova un marker a sinistra o a destra altrimenti non lo fa.
 			this->motion->waitUntilMoveIsFinished();
+			A = s.x<=X100*img_size.width;
+			E = s.x>=(1-X100)*img_size.width;
+			if(A | E)
+				rotateAllign(camProx, nu);
 			break;
 		case 2:
 			walk(0.2,0,3.14/3);
 			this->motion->waitUntilMoveIsFinished();
+			A = s.x<=X100*img_size.width;
+			E = s.x>=(1-X100)*img_size.width;
+			if(A | E)
+				rotateAllign(camProx, nu);
 			break;
 		case 0:
 			walk(0.2,0,0);
 			this->motion->waitUntilMoveIsFinished();
 			break;	
-		default:
+		default: // TODO contare il numero di volte che non trova un marker e farlo ruotare su se stesso anche non solo andare avanti.
+				 // TODO esplora all'inizio se non vede nulla
 			walk(0.1,0,0);
 			this->motion->waitUntilMoveIsFinished();
 			markerExplore(camProx, nu);

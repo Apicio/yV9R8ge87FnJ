@@ -88,6 +88,7 @@ public:
 	void markerExplore(ALVideoDeviceProxy, NaoUtils );
 	void infiniteWalk(float velX, float velY, float);
 	void init(const char* robotIP);
+	void rotateAllign(ALVideoDeviceProxy camProx, NaoUtils nu);
 	~TheWalkingNao(void);
 };
 
