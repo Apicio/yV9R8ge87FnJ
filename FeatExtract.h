@@ -6,15 +6,19 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <fstream> 
+#include "histogram.hpp"
+#include "lbp.hpp"
 #include "Constants.h"
 
 #define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,stdDevSaturation, stdDevValue, entropy,ratio,W,R,Y,meanB,meanG,meanR,area,distance,"
 
 using namespace std;
+using namespace cv;
 
-#define FEAT_COUNT 13
 #define BGR_FEAT_COUNT 3
 #define LBP_FEAT_COUNT 10
+#define HEADER_BGR "B,G,R,"
+#define HEADER_LBP "0,1,16,224,225,239,240,241,248,254,"
 
 class FeatExtract
 {

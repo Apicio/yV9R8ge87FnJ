@@ -17,16 +17,17 @@ Classiwekation::Classiwekation(void)
     	printf("\nUnable to Launch JVM\n");
 
 	clsWeka = env->FindClass("Weka"); // Read Weka.class
-	runClassification = env->GetMethodID(clsWeka,"runClassification","(Ljava/lang/String;)D");
+	runClassification = env->GetMethodID(clsWeka,"runClassification","(Ljava/lang/String;Ljava/lang/String;)D");
 	jmethodID clsWekaConst = env->GetMethodID(clsWeka, "<init>", "(Ljava/lang/String;)V");
 	jstring StringArg = env->NewStringUTF(MODEL);
 	WekaObj = env->NewObject(clsWeka, clsWekaConst, StringArg);
 
 }
 
-double Classiwekation::classify(string features){	
-	jstring StringArg = env->NewStringUTF(features.c_str());
-	double jobjRetData = env->CallDoubleMethod(WekaObj,runClassification,StringArg);
+double Classiwekation::classify(string featuresBGR, string featuresLBP){	
+	jstring StringArgBGR = env->NewStringUTF(featuresBGR.c_str());
+	jstring StringArgLBP = env->NewStringUTF(featuresLBP.c_str());
+	double jobjRetData = env->CallDoubleMethod(WekaObj,runClassification,StringArgBGR,StringArgLBP);
 	jthrowable exc = env->ExceptionOccurred();
     if (exc) {
         jclass newExcCls;
@@ -49,8 +50,9 @@ double Classiwekation::recognition(std::vector<cv::Mat> buffer){
 			// scarta blob con la pathfinder
 			// scarta blob a y < 140 (cambiare risoluzione)
 			// scartare blob piccoli
-			string features = FeatExtract().extractDuringMovement(blobs[i], false);
-			results.at(i).push_back(classify(features));
+			string featuresBGR = FeatExtract().extractForColorClassifier(blobs[i], false);
+			string featuresLBP = FeatExtract().extractForLBPClassifier(blobs[i], false);
+			results.at(i).push_back(classify(featuresBGR, featuresLBP));
 			// aggiungere una probabilità in funzione della dimensione del blob, gli oggetti di interesse hanno tutti una certa dimensione
 			// potrebbero esserci ogetti sullo sfondo per marker di stop diversi da quello corrente, filtra distanza.
 		}

@@ -13,7 +13,7 @@ using namespace std;
 
 #define PATH_SEPARATOR ';' /* define it to be ':' on Solaris */
 #define USER_CLASSPATH "." /* where Prog.class is */
-#define OPTION_STRING "-Djava.class.path=C:\\Users\\leo\\Desktop\\LAST_NaoVision\\JavaSrc\\TestStruct;C:\\Users\\leo\\Desktop\\LAST_NaoVision\\JavaSrc\\TestStruct\\weka.jar"
+#define OPTION_STRING "-Djava.class.path=C:\\Users\\leo\\Desktop\\NaoVision\\JavaSrc\\TestStruct;C:\\Users\\leo\\Desktop\\NaoVision\\JavaSrc\\TestStruct\\weka.jar"
 
 class Classiwekation
 {
@@ -26,7 +26,7 @@ private:
 public:
 	Classiwekation(void);
 	void ClassTest(void);
-	double classify(string features);
+	double classify(string featuresBGR, string featuresLBP);
 	double recognition(std::vector<cv::Mat>); // Ogni 3 abbiamo una direzione.
 	~Classiwekation(void);
 };
