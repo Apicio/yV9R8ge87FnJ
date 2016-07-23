@@ -42,6 +42,7 @@ struct MarkersInfo{
 	Point center;
 	Mat marker;
 	CvRect rect;
+	std::vector<cv::Point> curve;
 	bool isValid;
 	float angle;
 	vector<Point> contour;
@@ -90,7 +91,7 @@ public:
 	bool isMoving();
 	void moveOnX(float meters);
 	void moveUpNeck();
-	bool pathfinder(cv::Mat orig, Direction&, Point&, float angle); // AGGIUNGERE VALORI DI DEFAULT
+	bool pathfinder(cv::Mat orig, Direction&, Point&, float& angle); // AGGIUNGERE VALORI DI DEFAULT
 	void moveDownNeck(float PitchAngle);
 	void walk(float X, float Y, float angle);
 	void markerExplore(ALVideoDeviceProxy, NaoUtils );
@@ -98,8 +99,8 @@ public:
 	void infiniteWalk(float velX, float velY, float);
 	void init(const char* robotIP);
 	bool rotateAllign(ALVideoDeviceProxy camProx, NaoUtils nu, Size img_size, Point p, float angle);
-	vector<Point2f> getTwoNearY(vector<Point2f> points);
-	float calculateAngle(vector<Point2f> points);
+	vector<Point> getTwoNearY(vector<Point> points);
+	float calculateAngle(vector<Point> points);
 	float tryGyroscope();
 	~TheWalkingNao(void);
 };
