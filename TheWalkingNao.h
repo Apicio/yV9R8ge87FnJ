@@ -91,7 +91,7 @@ public:
 	bool isMoving();
 	void moveOnX(float meters);
 	void moveUpNeck();
-	bool pathfinder(cv::Mat orig, Direction&, Point&, float& angle); // AGGIUNGERE VALORI DI DEFAULT
+	bool pathfinder(cv::Mat orig, Direction&, Point&, float& angle, Mat&); // AGGIUNGERE VALORI DI DEFAULT
 	void moveDownNeck(float PitchAngle);
 	void walk(float X, float Y, float angle);
 	void markerExplore(ALVideoDeviceProxy, NaoUtils );

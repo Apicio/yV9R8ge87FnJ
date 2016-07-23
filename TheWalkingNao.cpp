@@ -317,7 +317,7 @@ bool _sortFun(MarkersInfo a, MarkersInfo b){
 	Point center(0.5*a.img_size.width,b.img_size.height);
 	return norm(a.center-center) < norm(b.center-center);
 }
-bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center, float& angle){
+bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center, float& angle, Mat& path_mask){
 	cout << "Calling Pathfinder" << endl;
 	assert(img.rows !=0);
 	assert(img.cols !=0);
@@ -499,8 +499,16 @@ bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center, flo
 //		cout << "angle!" << angle << endl;
 		break;
 	}
+	path_mask = Mat::zeros(img.size().height*3,img.size().width*3,CV_8U);
+	path_mask.setTo(255);
+	vector<vector<Point> > toDraw;
+	for(int ii = 0; ii<_markers.size(); ii++){
+		toDraw.push_back(_markers[ii].curve);
+		drawContours(path_mask, toDraw, ii, Scalar(0,0,0), CV_FILLED, 8);
+	}
+	resize(path_mask,path_mask,img.size(), 0, 0, INTER_NEAREST);
 	cout << "Pathfinder DONE. Found: " << foundSomethingIWantToShow << endl;
-	return foundSomethingIWantToShow;
+	return foundSomethingIWantToShow; 
 }
 
 double TheWalkingNao::computeAngle(Marker m, CameraParameters cam){
@@ -659,6 +667,7 @@ void TheWalkingNao::markerExplore(ALVideoDeviceProxy camProx, NaoUtils nu){
 	this->robotPosture->goToPosture("StandInit",0.5); //Crouch
 	this->motion->waitUntilMoveIsFinished();
 	static int up_down = 1;
+	Mat dummy;
 	Direction d; Point s; float angle = 0;
 	Size img_size;
 	int i =0;
@@ -671,7 +680,7 @@ void TheWalkingNao::markerExplore(ALVideoDeviceProxy camProx, NaoUtils nu){
 			cout << "Done." << endl;
 			cv::Mat img = nu.see(camProx,_imger);	
 			img_size = img.size();	
-			if(pathfinder(img,d,s,angle)){
+			if(pathfinder(img,d,s,angle,dummy)){
 				cout << "Found in " << rotations[i] << endl;
 				break;
 			}
@@ -832,6 +841,7 @@ cout << "ESCO" << endl;
 #endif
 void TheWalkingNao::moveNearMarker(NaoUtils nu, ALVideoDeviceProxy camProx){	
 	cout<<"Call Near Marker"<<endl;
+	Mat dummy;
 	do{	
 		Mat img = nu.see(camProx, _imger);
 		Size img_size = img.size();	
@@ -843,7 +853,7 @@ void TheWalkingNao::moveNearMarker(NaoUtils nu, ALVideoDeviceProxy camProx){
 		bool E = false;
 		bool toStop = false;
 		cout << "Read New Image" << endl;		
-		bool _event = pathfinder(img.clone(), moveTo, s, angle);
+		bool _event = pathfinder(img.clone(), moveTo, s, angle, dummy);
 		cout << "ANGLE " << angle << endl;
 		if(_event){	
 			A = s.x<=X100*img_size.width;

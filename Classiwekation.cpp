@@ -36,21 +36,32 @@ double Classiwekation::classify(string features){
 	return jobjRetData;
 }
 
-double Classiwekation::recognition(std::vector<cv::Mat> buffer){
+double Classiwekation::recognition(std::vector<cv::Mat> buffer, TheWalkingNao& twn){
 	// cambiare risoluzione
+	cout<<"Calling recognition"<<endl;
 	vector<vector<double> > results;
-	for(int i=0; buffer.size(); i++){
-		cv::Mat image = buffer[i];
-		vector<Mat> rectangles;
-		vector<Blob> blobs;
-		detect2(image,rectangles, blobs);
+	Mat kernelOp = getStructuringElement(MORPH_RECT,Size(7,7));
+	Direction stash1; Point stash2; float stash3=0;
+	vector<Mat> rectangles;
+	for(int i=0; i<buffer.size(); i++){
+		cv::Mat image = buffer[i];		
+		vector<Blob> blobs;		
+		cout<<"filtering image "<< endl;
+		Mat path_mask;
+		twn.pathfinder(image, stash1, stash2, stash3, path_mask);	
+		dilate(path_mask,path_mask,kernelOp);	
+		cout<<"calling detection"<<endl;
+		detect2(image,rectangles, blobs, path_mask);
+		cout<<"Detection done with "<< blobs.size() << "candidates elements" << endl;
 		for(int k = 0; k<blobs.size(); k++){
-			//if(pathfinder) continue;
-			// scarta blob con la pathfinder
+			cout<<"Extracting features"<<endl;
 			// scarta blob a y < 140 (cambiare risoluzione)
 			// scartare blob piccoli
-			string features = FeatExtract().extractDuringMovement(blobs[i], false);
-			results.at(i).push_back(classify(features));
+			string features = FeatExtract().extractDuringMovement(blobs[k], false);
+	        //results.at(i).push_back(classify(features));
+			imshow("pathfind_filter",blobs[k].cuttedImages);
+			cout<<features<<endl;
+			cout<<"pushed features"<<endl;
 			// aggiungere una probabilità in funzione della dimensione del blob, gli oggetti di interesse hanno tutti una certa dimensione
 			// potrebbero esserci ogetti sullo sfondo per marker di stop diversi da quello corrente, filtra distanza.
 		}
@@ -60,8 +71,10 @@ double Classiwekation::recognition(std::vector<cv::Mat> buffer){
 	int glass = 0;
 	int coffe_cup = 0;
 	for(int i=0; i<results.size(); i++){
+		cout << "Analise Shots.. ";
 		vector<double> frame_result = results.at(i);
-			for(int k=0; k<results.size(); k++){
+			for(int k=0; k<frame_result.size(); k++){
+				cout << "Case" << i <<", " << k << endl;
 				switch((int)frame_result.at(k)){
 				case 0:
 					red_apple++;
@@ -83,7 +96,7 @@ double Classiwekation::recognition(std::vector<cv::Mat> buffer){
 	// feature extraction
 	// clasidicazione su gruppi di 3
 	// si decide a maggioranza su una direzione
-	return 1;
+	return rand()%4;
 }
 
 Classiwekation::~Classiwekation(void)
