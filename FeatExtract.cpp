@@ -48,22 +48,22 @@ std::string FeatExtract::readStdDevHSV(cv::Mat image){
 
 /*NB:USARE QUESTA DURANTE LA MOVIMENTAZIONE*/
 std::string FeatExtract::extractDuringMovement(Blob b, bool toMask){
-	cv::Mat img =(b.cuttedWithBack).clone();
-	cv::Mat mask;
-	vector<Mat> bands;
-	std::stringstream s1;
+        cv::Mat img =(b.cuttedWithBack).clone();
+        cv::Mat mask;
+        vector<Mat> bands;
+        std::stringstream s1;
 	if(toMask)
-		img = b.cuttedImages.clone();
+                img = b.cuttedImages.clone();
 
-	s1<<readMeanHueAndMoments(b.cuttedImages(b.resizedRect));
-	s1<<readStdDevHSV(b.cuttedImages(b.resizedRect));
-	s1<<computeEntropy(b.cuttedImages(b.resizedRect))<<",";
-	s1<<computeRectangleRatio(b.resizedRect)<<",";
-	s1<<computeColorFeatures(b.cuttedImages(b.resizedRect));
-	s1<<b.area<<","<<b.distance<<",";
+        s1<<readMeanHueAndMoments(b.cuttedImages(b.resizedRect));
+        s1<<readStdDevHSV(b.cuttedImages(b.resizedRect));
+        s1<<computeEntropy(b.cuttedImages(b.resizedRect))<<",";
+        s1<<computeRectangleRatio(b.resizedRect)<<",";
+        s1<<computeColorFeatures(b.cuttedImages(b.resizedRect));
+        s1<<b.area<<","<<b.distance<<",";
 
-	s1<<"?"; //per Weka
-	return s1.str();
+        s1<<"?"; //per Weka
+        return s1.str();
 }
 
 std::string FeatExtract::computeColorFeatures(cv::Mat image){
@@ -199,6 +199,87 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
 		}
 	}
 	writer.close();
+}
+
+void FeatExtract::extractLBPFeatures(Mat& bgrImage, double lbpFeatures[])
+{
+    static int lbpIndices[] = {0, 1, 16, 224, 225, 239, 240, 241, 248, 254};
+
+    Mat grayImage, lbpImage, hist;
+    cvtColor(bgrImage, grayImage, CV_BGR2GRAY);
+
+    /* calcola istogramma delle lbp */
+    lbpImage = lbp::OLBP(grayImage);
+    hist = lbp::histogram(lbpImage, 256);
+
+    /* estrai i bin richiesti */
+    for (size_t i = 0; i < LBP_FEAT_COUNT; i++) {
+        lbpFeatures[i] = hist.at<float>(0, lbpIndices[i]);
+    }
+}
+
+void FeatExtract::extractBGRFeatures(Mat& bgrImage, double bgrFeatures[])
+{
+    Mat bgrChannels[3];
+    split(bgrImage, bgrChannels);
+
+    /* valori medi per ogni canale */
+    Scalar meanB = mean(bgrChannels[0]);
+    Scalar meanG = mean(bgrChannels[1]);
+    Scalar meanR = mean(bgrChannels[2]);
+
+    /* normalizza tra 0 ed 1 */
+    bgrFeatures[0] = meanB[0] / 255;
+    bgrFeatures[1] = meanG[0] / 255;
+    bgrFeatures[2] = meanR[0] / 255;
+}
+
+std::string FeatExtract::extractForColorClassifier(Blob blob, bool toMask)
+{
+    std::stringstream strStream;
+    cv::Mat img = (blob.cuttedWithBack).clone();
+
+    /* maschera se richiesto */
+    if(toMask) {
+        img = blob.cuttedImages.clone();
+    }
+
+    /* estrai feature di colore */
+    double bgrFeatures[BGR_FEAT_COUNT];
+    this->extractBGRFeatures(img, bgrFeatures);
+
+    /* concatena feature con virgola */
+    for (size_t i = 0; i < BGR_FEAT_COUNT; i++) {
+        strStream << bgrFeatures[i] << ',';
+    }
+
+    /* terminatore per richiesta classe */
+    strStream << '?';
+    return strStream.str();
+}
+
+std::string FeatExtract::extractForLBPClassifier(Blob blob, bool toMask)
+{
+    std::stringstream strStream;
+    cv::Mat img = (blob.cuttedWithBack).clone();
+
+    /* maschera se richiesto */
+    if(toMask) {
+        img = blob.cuttedImages.clone();
+    }
+
+    /* estrai feature di texture */
+    double lbpFeatures[LBP_FEAT_COUNT];
+    this->extractLBPFeatures(img, lbpFeatures);
+
+    /* concatena feature con virgola */
+    for (size_t i = 0; i < LBP_FEAT_COUNT; i++) {
+        strStream << lbpFeatures[i] << ',';
+    }
+
+    /* terminatore per richiesta classe */
+    strStream << '?';
+    return strStream.str();
 }
 
 FeatExtract::~FeatExtract(void)

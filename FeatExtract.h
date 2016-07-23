@@ -12,7 +12,9 @@
 
 using namespace std;
 
-
+#define FEAT_COUNT 13
+#define BGR_FEAT_COUNT 3
+#define LBP_FEAT_COUNT 10
 
 class FeatExtract
 {
@@ -31,7 +33,7 @@ public:
 	* @return The class label, or 0 for rejection
 	*/
 	void extract(std::vector<string> pathToDir, std::string pathToFile, std::vector<string> types,bool toMask);
-	std::string FeatExtract::extractDuringMovement(Blob,  bool);
+        std::string FeatExtract::extractDuringMovement(Blob blob,  bool);
 	std::string readMeanHueAndMoments(cv::Mat image);
 	std::string readStdDevHSV(cv::Mat image);
 	double computeEntropy(cv::Mat );
@@ -39,5 +41,13 @@ public:
 	double computeRectangleRatio(cv::Rect r) ;	 //In faseoperativa
 	std::string computeColorFeatures(cv::Mat image);
 	//double readBboxComparasion(cv::Mat image);	
+
+        /* estrazione grezza delle feature: uso interno */
+        void extractBGRFeatures(Mat& bgrImage, double bgrFeatures[]);
+        void extractLBPFeatures(Mat& bgrImage, double lbpFeatures[]);
+
+        /* estrazione stringa di feature per i due tipi di classificatore */
+        std::string extractForColorClassifier(Blob blob, bool toMask);
+        std::string extractForLBPClassifier(Blob blob, bool toMask);
 };
 
