@@ -5,6 +5,7 @@
 
 // Aldebaran includes.
 #include <alerror/alerror.h>
+#include <alproxies/almemoryproxy.h>
 #include <alproxies/almotionproxy.h>
 #include <alproxies/alrobotpostureproxy.h>
 #include <alproxies/alvideodeviceproxy.h>
@@ -29,14 +30,17 @@ class NaoUtils
 public:
 	int currCameraID;
 	string subscriberID;
+	ALValue _imger;
+
 	NaoUtils(void);
 	~NaoUtils(void);
+	void cameraSwitch(ALVideoDeviceProxy camProx);
 	void explore();
+	void init();
 	void writeImages(const std::string& naoIP, const std::string& path);
 	void takeSomePhotos(std::string path);
-	Mat see(ALVideoDeviceProxy );
-	Mat seeCam(ALVideoDeviceProxy camProx, ALValue&);
+	Mat see(ALVideoDeviceProxy, ALValue&);
+	Mat seeDetection(ALVideoDeviceProxy camProx, ALValue&);
 	void camShutdown(ALVideoDeviceProxy camProx);
-	void camInit(ALVideoDeviceProxy camProx, int camID);
 };
 

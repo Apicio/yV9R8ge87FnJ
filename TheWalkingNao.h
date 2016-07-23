@@ -23,6 +23,7 @@
 #include <alvision/alimage.h>
 #include <alvision/alvisiondefinitions.h>
 #include <opencv2\gpu\gpu.hpp>
+#include <alproxies/altexttospeechproxy.h>
 
 #define RESIZE_COEFF 3
 
@@ -42,6 +43,7 @@ struct MarkersInfo{
 	Mat marker;
 	CvRect rect;
 	bool isValid;
+	float angle;
 	vector<Point> contour;
 	MarkersInfo(){
 		isValid = false;
@@ -61,6 +63,11 @@ private:
 	
 	ALMotionProxy* motion;
 	ALRobotPostureProxy* robotPosture;
+	ALValue _imger;
+/*	ALTextToSpeechProxy* tts;
+	ALMemoryProxy* memoryProxy;
+	const char* ip;
+	float initial_gyro;*/
 	
 	int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy);
 	double computeAngle(Marker m, CameraParameters cam);
@@ -70,9 +77,11 @@ public:
 	
 	TheWalkingNao();
 	vector<Marker> ArucoFind(Mat img, double& angle,bool toRemoveMarkers);
+	void saySomething(cv::string);
 	void infiniteRotate(float velTheta);
-	void moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy camProx);
+	void moveNearMarker(NaoUtils nu, ALVideoDeviceProxy camProx);
 	void standUp();
+	void standCrouch();
 	void moveLeft(float meters,double angle);
 	void moveRight(float meters, double angle);
 	void moveForward(float meters);
@@ -81,14 +90,17 @@ public:
 	bool isMoving();
 	void moveOnX(float meters);
 	void moveUpNeck();
-	bool pathfinder(cv::Mat orig, Direction&, Point&);
+	bool pathfinder(cv::Mat orig, Direction&, Point&, float angle); // AGGIUNGERE VALORI DI DEFAULT
 	void moveDownNeck(float PitchAngle);
 	void walk(float X, float Y, float angle);
 	void markerExplore(ALVideoDeviceProxy, NaoUtils );
 	vector<Mat>  objectsExplore(ALVideoDeviceProxy, NaoUtils );
 	void infiniteWalk(float velX, float velY, float);
 	void init(const char* robotIP);
-	void rotateAllign(ALVideoDeviceProxy camProx, NaoUtils nu);
+	bool rotateAllign(ALVideoDeviceProxy camProx, NaoUtils nu, Size img_size, Point p, float angle);
+	vector<Point2f> getTwoNearY(vector<Point2f> points);
+	float calculateAngle(vector<Point2f> points);
+	float tryGyroscope();
 	~TheWalkingNao(void);
 };
 

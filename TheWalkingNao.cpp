@@ -1,11 +1,12 @@
 #include "TheWalkingNao.h"
 #define NAO 1
-#define X100 0.35
+#define SOGLIA 100
+#define X100 0.4
 char* s_Direction[] = {"UP", "RIGHT", "DOWN", "LEFT", "STOP"};
 
 TheWalkingNao::TheWalkingNao(){
 	/* Configuration */
-	_ImageSharp = true;
+	_ImageSharp = false;
 	_SharpSigma = 20;
 	_SharpThreshold = 5;
 	_SharpAmount = 3;
@@ -283,21 +284,66 @@ Mat getRotatedRoi(Mat& image, RotatedRect rect) {
 	return getRotatedRoi(image, rect, rect.angle);
 }
 
+float TheWalkingNao::calculateAngle(vector<Point2f> points) {
+	if (points.size() < 2)
+		return 0;
+	float Xb = points[0].x;
+	float Yb = points[0].y;
+	float Xa = points[1].x;
+	float Ya = points[1].y;
+
+	float m1 = (Yb - Ya) / (Xb - Xa);
+	return atan(m1);
+
+}
+
+vector<Point2f> TheWalkingNao::getTwoNearY(vector<Point2f> points) {
+	vector<Point2f> ret;
+	if (points.size() < 4)
+		return ret;
+	Point max1(-1, -1);
+	Point max2(-1, -1);
+	int indexMax1 = -1;
+	for (int i = 0; i < points.size(); i++) {
+		if (points[i].y > max1.y) {
+			max1 = points[i];
+			indexMax1 = i;
+		}
+	}
+	for (int i = 0; i < points.size(); i++) {
+		if ((points[i].y > max2.y) && (i != indexMax1))
+			max2 = points[i];
+	}
+	ret.push_back(max1);
+	ret.push_back(max2);
+	return ret;
+}
+
 bool _sortFun(MarkersInfo a, MarkersInfo b){
 	Point center(0.5*a.img_size.width,b.img_size.height);
 	return norm(a.center-center) < norm(b.center-center);
 }
-bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center){
+bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center, float angle){
+	cout << "Calling Pathfinder" << endl;
+	imshow("img",img);
+	waitKey(400);
+	assert(img.rows !=0);
+	assert(img.cols !=0);
 	if(_ImageSharp){
-		Mat blurred; 
+		cout << "Sharpening...";
+		Mat blurred = Mat::zeros(img.size(),img.type()); 
+		cout << "Blur...";
 		GaussianBlur(img, blurred, Size(), _SharpSigma, _SharpSigma);
+		cout << "lowContrastMask...";
 		Mat lowContrastMask = abs(img - blurred) < _SharpThreshold;
+		cout << "Sharpened..";
 		Mat sharpened = img*(1+_SharpAmount) + blurred*(-_SharpAmount);
+		cout << "COPY." << endl;
 		img.copyTo(sharpened, lowContrastMask);
 		sharpened.copyTo(img);
 	}
-	imshow("orig",img);
 	/* Dichiarazione */
+	cout << "Sharp Done." << endl;
 	Mat imgHSV;
 	vector<Mat> bands;
 	vector<Mat> bandsHSV;
@@ -319,6 +365,7 @@ bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center){
 		otsuTRGB += 5;
 		// TODO miglirare detection dei mark vengono visti male.
 	}while(countNonZero(dest)>(0.17*gray.rows*gray.cols) & otsuTRGB<=255);
+	cout << "Otsu Done." << endl;
 	resize(dest,dest,Size(RESIZE_COEFF*img.size().width,RESIZE_COEFF*img.size().height), 0, 0, INTER_NEAREST);
 	medianBlur(dest,dest,5);
 	/* Filtraggio dimensione del blob */
@@ -342,11 +389,9 @@ bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center){
 			double ratio = double(rect.width)/double(rect.height);
 			//if(ratio>= 0.90 && ratio <= 1.1){
 			blobs.GetBlob(i)->FillBlob(res,CV_RGB(255,255,255),0,0,true);
-			imshow("rect_im",res);
 			MarkersInfo mk;
 			mk.img_size = dest.size();
 			Mat rect_im = res(rect);
-		
 			Mat white(rect_im.size(), rect_im.type(), Scalar(255,255,255));	
 			mk.marker = white-rect_im;
 			mk.rect = rect;
@@ -354,8 +399,10 @@ bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center){
 			_markers.push_back(mk);
 		}
 	}
+	cout << "Found " << _markers.size() << " candidate" << endl;
 	/* Filtro per numero di elementi interni ad un quadrato, se c'è ne'è solo uno abbiamo un oggetto di interesse */
 	//	vector<vector<Point > > cont_marker;
+	int numOfValid = 0;
 	for(int i = _markers.size()-1; i>=0; i--){
 		vector<vector<Point > > tmp_cont_marker;
 		Mat gray = _markers[i].marker;
@@ -371,19 +418,27 @@ bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center){
 			gray.copyTo(_markers[i].marker);
 			_markers[i].isValid = true;
 			_markers[i].contour = tmp_cont_marker[0];
+			numOfValid++;
 		}
 	}
+	cout << "Found " << numOfValid << " Marker" << endl;
+	int numOfRROI = 0;
 	/* Se sono rimasti marker individuiamoli */
 	for(int i = 0; i<_markers.size(); i++){
 		if(!_markers[i].isValid) continue;
 		Mat gray = _markers[i].marker;
 		CBlobResult new_blobs = CBlobResult(gray ,Mat(),4);
 		double area = new_blobs.GetBlob(0)->Area();
-		if(area > 700){		
+		if(area > 700){	
 			RotatedRect rrect = minAreaRect(_markers[i].contour);
+			Point2f rr_points[4];
+			rrect.points(rr_points);
+			vector<Point2f> _points(rr_points,&rr_points[3]);
+			_points = getTwoNearY(_points);
+			_markers[i].angle = calculateAngle(_points);
 			Mat rroi = getRotatedRoi(gray, rrect); // TODO se ruotato strano risponde DOWN
 			resize(rroi,rroi,Size(400,400), 0, 0, INTER_NEAREST);
-			imshow("roi",rroi);
+			imshow("ROI IMAGE",rroi);
 			double swidth=rroi.rows/2;
 			double w_density[2][2];
 			for (int _i=0; _i<2; _i++)
@@ -416,23 +471,23 @@ bool TheWalkingNao::pathfinder(Mat img, Direction& direction, Point& center){
 			curve.clear();
 			_markers[i].dir = angle;
 			_markers[i].isValid = true;
+			numOfRROI++;
 		}else{
 			_markers[i].isValid = false;
 		}
 	}
-
+	cout << "Found " << numOfRROI << " RROI" << endl;
 	bool foundSomethingIWantToShow = false;
 	std::sort(_markers.begin(),_markers.end(),_sortFun);
-	for(int ii = 0; ii<_markers.size(); ii++){
-		cout << _markers[ii].dir << endl;
-	}
 	for(int ii = 0; ii<_markers.size(); ii++){
 		if(!_markers[ii].isValid) continue;
 		direction = _markers[ii].dir;
 		center = Point(_markers[ii].center.x/RESIZE_COEFF,_markers[ii].center.y/RESIZE_COEFF);
 		foundSomethingIWantToShow = true;
+		angle = _markers[ii].angle;
 		break;
 	}
+	cout << "Pathfinder DONE. Found: " << foundSomethingIWantToShow << endl;
 	return foundSomethingIWantToShow;
 }
 
@@ -474,14 +529,25 @@ double TheWalkingNao::fmax(double element[], int size){
 	return _small;
 }
 void TheWalkingNao::init(const char* robotIP){
+//	this->tts = new AL::ALTextToSpeechProxy(robotIP, PORT);
 	this->motion = new AL::ALMotionProxy(robotIP,PORT); 
 	this->robotPosture = new AL::ALRobotPostureProxy(robotIP,PORT);
+	/*this->memoryProxy = new AL::ALMemoryProxy(robotIP, NAOPORT);
+	this->initial_gyro = this->memoryProxy->getData("Device/SubDeviceList/InertialSensor/AngleZ/Sensor/Value");*/
 }
 void TheWalkingNao::standUp() {
 	/* required position before moving */
 	robotPosture->goToPosture("StandInit", 0.5);
+	this->motion->waitUntilMoveIsFinished();
 }
-
+void TheWalkingNao::standCrouch() {
+	/* required position before moving */
+	robotPosture->goToPosture("Crouch", 0.5);
+	this->motion->waitUntilMoveIsFinished();
+}
+/*void TheWalkingNao::saySomething(cv::string toSay){	
+	this->tts->say(toSay);
+}*/
 void TheWalkingNao::moveLeft(float meters,double angle) {
 	/* moves to the left, rotating torso 90 deg. counter-clockwise */
 	motion->moveTo(0,0,angle);
@@ -530,69 +596,80 @@ void TheWalkingNao::infiniteRotate(float velTheta){
 	val[4][1] = 0.5;   //Freq
 	motion->post.move(0,0,velTheta,val);
 }
+/*
+float TheWalkingNao::tryGyroscope(){
+	//ALLocalizationProxy::learnHome().
+	//  ALLocalizationProxy::getRobotPosition(bool active) Returns:	the coordinates x, y, theta of the pose2D of the robot, computed by the localization.
+	// AL::ALValue ALLocalizationProxy::getRobotOrientation(bool active) estimated angular position (in radians) between -Pi and Pi.
+	// 
+	float gyro = 0;
 
-void TheWalkingNao::rotateAllign(ALVideoDeviceProxy camProx, NaoUtils nu){
-	cv::Mat img = nu.see(camProx);
-	Size img_size = img.size();
-	Direction d; Point p;
-	if(pathfinder(img,d,p)){
-		bool A = p.x<=X100*img_size.width;
-		bool E = p.x>=(1-X100)*img_size.width;
-		bool C = !A & !E;
-		if(A){
-			cout << "ALLIGN ROTATE LEFT" << endl;
-			do{
-				walk(0, 0, 3.14/10);
-				this->motion->waitUntilMoveIsFinished();
-				img = nu.see(camProx);
-				pathfinder(img,d,p);
-				E = p.x>=(1-X100)*img_size.width;
-				A = p.x<=X100*img_size.width;
-				C = !E & !A;
-			}while(!C);
-		}else if(E){
-			cout << "ALLIGN ROTATE RIGHT" << endl;
-			do{
-				walk(0, 0, -3.14/10);
-				this->motion->waitUntilMoveIsFinished();
-				img = nu.see(camProx);
-				pathfinder(img,d,p);
-				A = p.x<=X100*img_size.width;
-				E = p.x>=(1-X100)*img_size.width;
-				C = !E & !A;
-			}while(!C);
-		}
-	}else{
-		cout << "Error in rotateAllign, do markerExplore Again" << endl;
-		markerExplore(camProx,nu);
+	gyro =this->memoryProxy->getData("Device/SubDeviceList/InertialSensor/AngleZ/Sensor/Value"); //TODO verificare 
+	cout <<"GIROSCOPIO " << gyro << endl;
+	return gyro;
+}*/
+
+bool TheWalkingNao::rotateAllign(ALVideoDeviceProxy camProx, NaoUtils nu, Size img_size, Point p, float angle){
+#define USE_RRECT 0
+#if USE_RRRECT
+	rotate(angle);
+#else
+	bool A = p.x<=X100*img_size.width;
+	bool E = p.x>=(1-X100)*img_size.width;
+	bool C = !A & !E;
+	if(A){
+		cout << "ALLIGN ROTATE LEFT" << endl;
+		//			do{
+		walk(0, -0.1, 3.14/14);
+		this->motion->waitUntilMoveIsFinished();
+		/*				img = nu.see(camProx);
+		pathfinder(img,d,p);
+		E = p.x>=(1-X100)*img_size.width;
+		A = p.x<=X100*img_size.width;
+		C = !E & !A;
+		if(!C)
+		//trasla	
+		}while(!C);*/
+		return true;
+	}else if(E){
+		cout << "ALLIGN ROTATE RIGHT" << endl;
+		//			do{
+		walk(0, 0.1, -3.14/14);
+		this->motion->waitUntilMoveIsFinished();
+		/*				img = nu.see(camProx);
+		pathfinder(img,d,p);
+		A = p.x<=X100*img_size.width;
+		E = p.x>=(1-X100)*img_size.width;
+		C = !E & !A;
+		}while(!C);*/
+		return true;
 	}
-
+	return false;
+#endif
 }
 void TheWalkingNao::markerExplore(ALVideoDeviceProxy camProx, NaoUtils nu){
 	this->motion->waitUntilMoveIsFinished();
 	this->robotPosture->goToPosture("StandInit",0.5); //Crouch
-	static float up_down = 1;
-	Direction d; Point s;
+	static int up_down = 1;
+	Direction d; Point s; float angle = 0;
 	Size img_size;
 	int i =0;
 	try {
 		float rotations[] = {0,-3.14/2,3.14};
-		for(i=0;i<3;i++){	
+		for(i=0;i<3;i++){
+			cout << "Try with Rotation " << rotations[i] << endl;
 			walk(0,0,rotations[i]);
 			this->motion->waitUntilMoveIsFinished();
-			cv::Mat img = nu.see(camProx);	
-			img_size = img.size();
-			imshow("explore",img);
-			waitKey(0);		
-			if(pathfinder(img,d,s))
+			cout << "Done." << endl;
+			cv::Mat img = nu.see(camProx,_imger);	
+			img_size = img.size();	
+			if(pathfinder(img,d,s,angle)){
+				cout << "Found in " << rotations[i] << endl;
 				break;
+			}
 		}
-		if(i<3){
-			bool A = s.x<=X100*img_size.width;
-			bool E = s.x>=(1-X100)*img_size.width;
-			if(A | E) 
-				rotateAllign(camProx, nu);
-		}else{
+		if(i>=3){
+			cout << "Error no Marker" << endl;
 			walk(0,0,rotations[1]);
 			this->motion->waitUntilMoveIsFinished();
 			walk(0.1*up_down,0,0);
@@ -616,16 +693,17 @@ vector<Mat> TheWalkingNao::objectsExplore(ALVideoDeviceProxy camProx, NaoUtils n
 		AL::ALValue time = 1.0f;
 		this->motion->stiffnessInterpolation(jointYaw, stiffness, time);
 		float orders[] = {0,-0.3f,0.6f};
-		for(i=0;i<3;i++){	
+		for(i=0;i<3;i++){
+			cout << "Explore to " << orders[i] << endl;
 			AL::ALValue targetAnglesYaw= AL::ALValue::array(orders[i]);
 			AL::ALValue targetTimesYaw= AL::ALValue::array(1.0f);
 			bool isAbsolute = true;
 			this->motion->angleInterpolation(jointYaw, targetAnglesYaw, targetTimesYaw, isAbsolute);
 			this->motion->waitUntilMoveIsFinished();
-			cv::Mat img = nu.see(camProx);
+			cv::Mat img = nu.see(camProx,_imger);
 			toReturn.push_back(img);
 		}
-	
+
 	}catch(std::exception& e){cout<<e.what()<<endl;}
 	return toReturn;
 }
@@ -651,19 +729,121 @@ void TheWalkingNao::restNow() {
 	/* moves forward, without torso rotation */
 	motion->rest();
 }
-
+#if 1
+void TheWalkingNao::moveNearMarker(NaoUtils nu, ALVideoDeviceProxy camProx){	
+	cout<<"Call Near Marker"<<endl;
+	do{	
+		Mat img = nu.see(camProx, _imger);
+		Size img_size = img.size();	
+		Point s = Point(img_size.width*0.5,img_size.height*0.5);
+		Direction moveTo = STOP;
+			
+		float angle = 0;
+		bool A = false;
+		bool E = false;
+		bool toStop = false;
+		cout << "Read New Image" << endl;		
+		bool _event = pathfinder(img.clone(), moveTo, s, angle);
+		if(_event){
+			if(s.y<SOGLIA && moveTo == UP){ // TODO Abbassare questa soglia e provare con una MOVE UP / STOP più corta usiamo i primi 10 cm per allinearci in rotazione
+				cout << "infinite walking.." << endl;
+				img_size = img.size();
+				A = s.x<=X100*img_size.width;
+				E = s.x>=(1-X100)*img_size.width;
+				float vY = 0;
+				vY = A? 0.1 : vY;
+				vY = E? -0.1 : vY;
+				infiniteWalk(0.1, vY, 0);				
+			}else{
+				if(moveTo == UP){
+					cout << "GOING" << endl;
+					walk(0.3, 0, 0);
+					this->motion->waitUntilMoveIsFinished();
+					cout << "Done." << endl;
+				}
+				if(moveTo == RIGHT){
+					cout << "RIGHT" << endl;
+					walk(0.6, 0.05, -75*3.14/180);
+					this->motion->waitUntilMoveIsFinished();
+					cout << "Done." << endl;
+				}
+				if(moveTo == LEFT){
+					cout << "LEFT" << endl;
+					walk(0.6, -0.05, 75*3.14/180);
+					this->motion->waitUntilMoveIsFinished();
+					cout << "Done." << endl;
+				}
+				if(moveTo == STOP){
+					cout << "STOP" << endl;
+					walk(0.5, 0, 0);
+					this->motion->waitUntilMoveIsFinished();
+					toStop = true;
+					cout << "Done." << endl;
+				}
+				bool _rotate = false;
+				do{
+					img = nu.see(camProx, _imger);
+					A = false;
+					E = false;
+					if(pathfinder(img, moveTo, s, angle)){
+						cout << "Try..";
+						img_size = img.size();
+						A = s.x<=X100*img_size.width;
+						E = s.x>=(1-X100)*img_size.width;
+						cout << ".. to alligh" << endl;
+						if(A){
+							cout << "ALLIGN LEFT" << endl;
+							walk(0, 0.08, 0);
+							this->motion->waitUntilMoveIsFinished();
+							_rotate = true;
+							cout << "Done." << endl;
+						}
+						if(E){
+							cout << "ALLIGN RIGHT" << endl;
+							walk(0, -0.08, 0);
+							this->motion->waitUntilMoveIsFinished();
+							_rotate = true;
+							cout << "Done." << endl;
+						}
+					}
+				}while(A | E);
+				cout << "Rotate? " << _rotate << endl;
+				if(_rotate){
+					cout << "ROTATE" << endl;
+					img = nu.see(camProx, _imger);
+					if(pathfinder(img, moveTo, s, angle)){
+						walk(0, 0, -angle);
+						this->motion->waitUntilMoveIsFinished();
+						cout << "Done." << endl;
+					}
+				}
+				if(toStop) break;
+				cout << "Wait.." << endl;
+			}
+		}
+	}while(cv::waitKey(1)!='e');
+	cout << "ESCO" << endl;
+}
+#endif
+#if 0
 void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy camProx){	
 	Size img_size = img.size();
-	double x100 = 0.35;
 	Direction moveTo = STOP;
 	Point s(img_size.width*0.5,img_size.height*0.5);
 	bool doingAction = false;
+	float angle = 0;
 	do{	
-		bool _event = pathfinder(img, moveTo, s);
+		bool _event = pathfinder(img, moveTo, s, angle);
 		if(_event){
-			bool A = s.x<=x100*img_size.width;
-			bool E = s.x>=(1-x100)*img_size.width;
+			bool A = s.x<=X100*img_size.width;
+			bool E = s.x>=(1-X100)*img_size.width;
 			if(A | E){
+				if(rotateAllign(camProx,nu, img.size(), s, angle)){
+					img = nu.see(camProx, _imger);
+					pathfinder(img, moveTo, s, angle);
+					A = s.x<=X100*img_size.width;
+					E = s.x>=(1-X100)*img_size.width;
+				}
 				if(A){
 					cout << "ALLIGN LEFT" << endl;
 					walk(0, 0.08, 0);
@@ -675,31 +855,41 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 					this->motion->waitUntilMoveIsFinished();
 				}
 			}else{
-				if(moveTo == UP){
-					cout << "GOING" << endl;
-					walk(0.5, 0, 0);
-					this->motion->waitUntilMoveIsFinished();
+#define USE_SOGLIA 1
+#if USE_SOGLIA
+				if(s.y<SOGLIA){
+					infiniteWalk(0.1, 0, 0);
+					cout << "infinite walking.." << endl;
+				}else{
+#endif
+					if(moveTo == UP){
+						cout << "GOING" << endl;
+						walk(0.5, 0, 0);
+						this->motion->waitUntilMoveIsFinished();
+					}
+					if(moveTo == RIGHT){
+						cout << "RIGHT" << endl;
+						walk(0.65, 0.05, -75*3.14/180);
+						this->motion->waitUntilMoveIsFinished();
+					}
+					if(moveTo == LEFT){
+						cout << "LEFT" << endl;
+						walk(0.65, -0.05, 75*3.14/180);
+						this->motion->waitUntilMoveIsFinished();
+					}
+					if(moveTo == STOP){
+						cout << "STOP" << endl;
+						walk(0.5, 0, 0);
+						this->motion->waitUntilMoveIsFinished();
+						break;
+					}
+#if USE_SOGLIA
 				}
-				if(moveTo == RIGHT){
-					cout << "RIGHT" << endl;
-					walk(0.65, 0.05, -75*3.14/180);
-					this->motion->waitUntilMoveIsFinished();
-				}
-				if(moveTo == LEFT){
-					cout << "LEFT" << endl;
-					walk(0.65, -0.05, 75*3.14/180);
-					this->motion->waitUntilMoveIsFinished();
-				}
-				if(moveTo == STOP){
-					cout << "STOP" << endl;
-					walk(0.5, 0, 0);
-					this->motion->waitUntilMoveIsFinished();
-					break;
-				}
+#endif
 			}
 		}
-		cout << "Moving.." << endl;
-		img = nu.see(camProx);
+		cout << "Wait.." << endl;
+		img = nu.see(camProx, _imger);
 	}while(cv::waitKey(1)!='e');
 #if 0
 	do{	
@@ -885,7 +1075,7 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 		}
 		_event = false;
 		//imshow("image_nao",img);
-		img = nu.see(camProx);
+		img = nu.see(camProx, _imger);
 	}while(cv::waitKey(1)!='e');
 
 #endif
@@ -935,6 +1125,7 @@ void TheWalkingNao::moveNearMarker(Mat& img, NaoUtils nu, ALVideoDeviceProxy cam
 	//	moveForward(distY/2000);	*/
 
 }
+#endif
 
 
 

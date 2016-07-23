@@ -8,7 +8,7 @@
 #include <fstream> 
 #include "Constants.h"
 
-#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,entropy,ratio,W,R,Y,meanB,meanG,meanR,area,distance,"
+#define HEADER "meanHue, mom1, mom2, mom3, mom4, mom5, mom6, mom7,stdDevHue,stdDevSaturation, stdDevValue, entropy,ratio,W,R,Y,meanB,meanG,meanR,area,distance,"
 
 using namespace std;
 
@@ -33,7 +33,7 @@ public:
 	void extract(std::vector<string> pathToDir, std::string pathToFile, std::vector<string> types,bool toMask);
 	std::string FeatExtract::extractDuringMovement(Blob,  bool);
 	std::string readMeanHueAndMoments(cv::Mat image);
-	std::string readStdDevHue(cv::Mat image);
+	std::string readStdDevHSV(cv::Mat image);
 	double computeEntropy(cv::Mat );
     double computeRectangleRatio(cv::Mat image); //In fase di training
 	double computeRectangleRatio(cv::Rect r) ;	 //In faseoperativa

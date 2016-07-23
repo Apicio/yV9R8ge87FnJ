@@ -4,7 +4,6 @@
 NaoUtils::NaoUtils(void)
 {}
 
-
 void NaoUtils::explore(){
 
 	/** The name of the joint to be moved. */
@@ -64,51 +63,67 @@ void NaoUtils::explore(){
 	exit(0);
 }
 
-void NaoUtils::camInit(ALVideoDeviceProxy camProx, int camID){
-	subscriberID = camProx.subscribeCamera("subscriberID",camID, kQVGA, kBGRColorSpace, 30);
-}
+Mat NaoUtils::seeDetection(ALVideoDeviceProxy camProx, ALValue &img){
+	cv::Mat imgHeader;
+	try{
+	std::string subscriberID = "subscriberID1";
+	/** Subscribe a client image requiring 640*480 and BGR colorspace.*/
+	subscriberID = camProx.subscribeCamera("subscriberID1",1, kQVGA, kBGRColorSpace, 30);
+	/** Create an cv::Mat header to wrap into an opencv image.*/
+	imgHeader = cv::Mat(cv::Size(320, 240), CV_8UC3);
 
-Mat NaoUtils::seeCam(ALVideoDeviceProxy camProx, ALValue& img){
-	cv::Mat imgHeader = cv::Mat(cv::Size(320, 240), CV_8UC3);
+
 	/** Main loop. Exit when pressing ESC.*/
 	img = camProx.getImageRemote(subscriberID);
-	imgHeader.data = (uchar*) img[6].GetBinary();
-	camProx.releaseImage(subscriberID);
-	return imgHeader.clone();
-}
-
-void NaoUtils::camShutdown(ALVideoDeviceProxy camProx){
-	camProx.unsubscribe(subscriberID);
-}
-
-
-Mat NaoUtils::see(ALVideoDeviceProxy camProx){
-	std::string subscriberID = "subscriberID";
-	/** Subscribe a client image requiring 640*480 and BGR colorspace.*/
-	subscriberID = camProx.subscribeCamera("subscriberID",1, kQVGA, kBGRColorSpace, 30);
-	/** Create an cv::Mat header to wrap into an opencv image.*/
-	cv::Mat imgHeader = cv::Mat(cv::Size(320, 240), CV_8UC3);
-
-
-	/** Main loop. Exit when pressing ESC.*/
-	ALValue img = camProx.getImageRemote(subscriberID);
 	imgHeader.data = (uchar*) img[6].GetBinary();
 	camProx.releaseImage(subscriberID);
 
 	static int i = 0;
 	i++;
 	std::stringstream ss;
-	ss << "prova\\image_3" << i <<".jpg";
+	ss << "prova\\image_detection_14" << i <<".jpg";
 	imwrite(ss.str(),imgHeader);
 	imshow("naosee",imgHeader);
 
 	/** Cleanup.*/
 	camProx.unsubscribe(subscriberID);
-	return imgHeader.clone();
+	}catch(std::exception& e){std::cout<<e.what()<<std::endl; camProx.unsubscribe(subscriberID);
+	}
+	return imgHeader;
+}
+
+
+Mat NaoUtils::see(ALVideoDeviceProxy camProx, ALValue &img){
+	cv::Mat imgHeader;
+	try{
+	std::string subscriberID = "subscriberID1";
+	/** Subscribe a client image requiring 640*480 and BGR colorspace.*/
+	subscriberID = camProx.subscribeCamera("subscriberID1",1, kQVGA, kBGRColorSpace, 30);
+	/** Create an cv::Mat header to wrap into an opencv image.*/
+	imgHeader = cv::Mat(cv::Size(320, 240), CV_8UC3);
+
+
+	/** Main loop. Exit when pressing ESC.*/
+	img = camProx.getImageRemote(subscriberID);
+	imgHeader.data = (uchar*) img[6].GetBinary();
+	camProx.releaseImage(subscriberID);
+
+	static int i = 0;
+	i++;
+	std::stringstream ss;
+	ss << "prova\\image_14" << i <<".jpg";
+	imwrite(ss.str(),imgHeader);
+	imshow("naosee",imgHeader);
+
+	/** Cleanup.*/
+	camProx.unsubscribe(subscriberID);
+	}catch(std::exception& e){std::cout<<e.what()<<std::endl; camProx.unsubscribe(subscriberID);
+	}
+	return imgHeader;
 }
 
 void NaoUtils::takeSomePhotos(std::string path){
-	AL::ALMotionProxy motionProx(NAOIP, NAOPORT);
+    AL::ALMotionProxy motionProx(NAOIP, NAOPORT);
 	AL::ALRobotPostureProxy posture(NAOIP, NAOPORT);
 	posture.goToPosture("Stand",1.0);
 	ALVideoDeviceProxy camProx(NAOIP, NAOPORT);

@@ -31,13 +31,17 @@ std::string FeatExtract::readMeanHueAndMoments(cv::Mat image){
 	return s.str();
 }
 
-std::string FeatExtract::readStdDevHue(cv::Mat image){
+std::string FeatExtract::readStdDevHSV(cv::Mat image){
 	std::stringstream s;
-	cv::Mat grayImage, hsvImage, pad, stdDevHue;
+	cv::Mat grayImage, hsvImage, pad, stdDevHue, stdDevSaturation, stdDevValue;
 	std::vector<Mat> hsvBands; 
 	cvtColor(image, hsvImage, CV_BGR2HSV);
 	split(hsvImage,hsvBands);
 	meanStdDev(hsvBands[0],pad,stdDevHue);
+	s<<stdDevHue.at<double>(0,0)<<",";
+	meanStdDev(hsvBands[1],pad,stdDevSaturation);
+	s<<stdDevHue.at<double>(0,0)<<",";
+	meanStdDev(hsvBands[2],pad,stdDevValue);
 	s<<stdDevHue.at<double>(0,0)<<",";
 	return s.str();
 }
@@ -52,7 +56,7 @@ std::string FeatExtract::extractDuringMovement(Blob b, bool toMask){
 		img = b.cuttedImages.clone();
 
 	s1<<readMeanHueAndMoments(b.cuttedImages(b.resizedRect));
-	s1<<readStdDevHue(b.cuttedImages(b.resizedRect));
+	s1<<readStdDevHSV(b.cuttedImages(b.resizedRect));
 	s1<<computeEntropy(b.cuttedImages(b.resizedRect))<<",";
 	s1<<computeRectangleRatio(b.resizedRect)<<",";
 	s1<<computeColorFeatures(b.cuttedImages(b.resizedRect));
@@ -70,14 +74,14 @@ std::string FeatExtract::computeColorFeatures(cv::Mat image){
 	std::vector<cv::Mat> bandsBGR; split(copy,bandsBGR);
 	std::vector<cv::Mat> bandsCMYK; rgb2cmyk(copy,bandsCMYK);
 	Scalar W,R,Y;
-	W = (mean(copyGray) - mean(bandsBGR[1]) ) / (mean(copyGray) + mean(bandsBGR[1]));
-	R = (mean(bandsBGR[2]) - mean(bandsBGR[1])) /( mean(bandsBGR[2]) +mean( bandsBGR[1]));
+	W = (mean(bandsCMYK[3]) - mean(bandsBGR[1]) ) / (mean(bandsCMYK[3]) + mean(bandsBGR[1]));
+	R = (mean(bandsCMYK[1]) - mean(bandsBGR[1])) /( mean(bandsCMYK[1]) +mean( bandsBGR[1]));
 	Y = (mean(bandsCMYK[2]) - mean(bandsBGR[1])) /(mean(bandsCMYK[2]) + mean(bandsBGR[1]));
-	
+
 	/*Estrazione medie RAW della bdna BGR*/
-	Scalar meanB = mean(bandsBGR[0]);
-	Scalar meanG = mean(bandsBGR[1]);
-	Scalar meanR = mean(bandsBGR[2]);
+	Scalar meanB = mean(bandsBGR[0])/mean(copyGray);
+	Scalar meanG = mean(bandsBGR[1])/mean(copyGray);
+	Scalar meanR = mean(bandsBGR[2])/mean(copyGray);
 
 	ss<<W[0]<<","<<R[0]<<","<<Y[0]<<","<<meanB[0]<<","<<meanG[0]<<","<<meanR[0]<<",";
 	return ss.str();
@@ -141,7 +145,6 @@ double FeatExtract::computeRectangleRatio(cv::Rect r) {
 }
 
 
-
 void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite, std::vector<string> types, bool toMask){
 	DIR *pDIR;
 	cv::Mat readed, img,mask;
@@ -173,9 +176,9 @@ void FeatExtract::extract(std::vector<string> pathToDir, std::string pathToWrite
 
 						/*CALCOLO RAPPORTO FRA BBOX, NB: PRIMA DELLA RESIZE!!!*/
 						//	writer<<readBboxComparasion(readed)<<",";
-					
+
 						writer<<readMeanHueAndMoments(readed(r));
-						writer<<readStdDevHue(readed(r));
+						writer<<readStdDevHSV(readed(r));
 						writer<<computeEntropy(readed(r))<<",";
 						writer<<computeRectangleRatio(readed(r))<<",";
 						writer<<computeColorFeatures(readed(r));
