@@ -10,7 +10,7 @@
 #define DET_HEIGH 480
 #define DET_WIDTH 640
 #define MAX_AREA 40000
-#define MIN_AREA 5000
+#define MIN_AREA 2000
 #define RECT_AUGMENT 0.2
 #define SHADOW_THRESH 80
 #define MEAN_OFFSET

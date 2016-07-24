@@ -300,13 +300,13 @@ CBlobResult computeWhiteMaskOtsu(Mat& imgRGBin, Mat& imgHSVIn, CBlobResult& blob
 	newMask.setTo(0);
 	for(;i<blobs.GetNumBlobs();i++){
 		double area = blobs.GetBlob(i)->Area();
-		if(area < 11000 && area > 1000)
-			blobs.GetBlob(i)->FillBlob(newMask,CV_RGB(255,255,255),0,0,true);
+		if(area < MAX_AREA && area > 0.5*MIN_AREA)
+			blobs.GetBlob(i)->FillBlob(newMask,Scalar(255),0,0,true);
 	} 
 	if(countNonZero(maskRGB)>400 && countNonZero(maskHSV)>400 && blobSizeBefore!=blobSizeAfter){
 		vector<Mat> BGRbands;  split(imgRGBin,BGRbands);
-		Mat maskedRGB = applyMaskBandByBand(newMask,BGRbands);
-		bitwise_not(newMask,newMask);
+		Mat maskedRGB = applyMaskBandByBand(maskRGB,BGRbands);
+		bitwise_not(maskHSV,newMask);
 		split(imgHSVIn,BGRbands);
 		Mat maskedHSV = applyMaskBandByBand(newMask,BGRbands);
 		blobs = computeWhiteMaskOtsu(maskedRGB, maskedHSV, blobs, countNonZero(maskRGB),countNonZero(maskHSV),RGBratio, HSVratio, bmin, bmax, i-1);
@@ -384,7 +384,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs, Mat pa
 	*/
 	computeInterest(img);
 	CBlobResult blobsRs;
-	blobsRs = computeWhiteMaskOtsu(img, img, blobsRs, img.rows*img.cols, img.rows*img.cols, 0.8, 0.8, 30, 200, 0);
+	blobsRs = computeWhiteMaskOtsu(img, img, blobsRs, img.rows*img.cols, img.rows*img.cols, 0.5, 0.5, 30, 200, 0);
 	cout<<"..Compute White Mask";
 	
 	
@@ -394,27 +394,27 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs, Mat pa
 		if(area < 10000 && area > 400)
 			blobsRs.GetBlob(i)->FillBlob(whiteMaskOrig,CV_RGB(255,255,255),0,0,true);
 	}
+//	whiteMaskOrig = whiteMaskOrig + computeWhiteMaskLight(img);
+	whiteMaskOrig = whiteMaskOrig + computeWhiteMaskShadow(img);
+	imshow("L",whiteMaskOrig);
 	cout <<"..Fill blob";
-	imshow("asd",whiteMaskOrig);
-	waitKey(0);
 	threshold(masked,whiteMaskMasked,0,255,THRESH_BINARY);
 	cvtColor(whiteMaskMasked,whiteMaskMasked,CV_BGR2GRAY);
 	cout << whiteMaskMasked.type() << " " << whiteMaskOrig.type() << endl;
 	bitwise_or(whiteMaskMasked,whiteMaskOrig,thOrig);
 	bitwise_and(path_mask,thOrig,thOrig);
+	medianBlur(thOrig,thOrig,11);
 	masked = applyMaskBandByBand(thOrig,BGRbands);
 #if DO_MORPH
 	/*Operazioni morfologiche per poter riempire i buchi e rimuovere i bordi frastagliati*/
 	dilate(masked,morph,kernelEr);
 	erode(morph,morph,kernelEr);
 
-	erode(morph,morph,kernelOp);
-	dilate(morph,morph,kernelOp);
+	
 #else
 	morph = masked;
 #endif
 	imshow("asdmor",morph);
-	waitKey(0);
 	/*Ricerca componenti connesse e rimozione in base all'area*/
 	cvtColor(morph,bwmorph,CV_BGR2GRAY);
 	findContours(bwmorph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
@@ -467,7 +467,6 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs, Mat pa
 		else{
 			cout<<"VIAAA"<<endl;
 			imshow("gettato",b.cuttedImages(b.resizedRect)) ;
-			waitKey(0);
 			cvDestroyAllWindows();
 
 		}
@@ -477,7 +476,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs, Mat pa
 	bitwise_xor(out,cont,out);
 	imshow("img",img);
 	imshow("out",out);
-	waitKey(0);
+	waitKey(7000);
 	cvDestroyAllWindows();
 	
 }
