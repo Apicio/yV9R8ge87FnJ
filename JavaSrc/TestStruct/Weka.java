@@ -78,7 +78,7 @@ public class Weka
 		try {
 			Instances unlabeled = returnIstances(toInstanceApplesVsCups);
 			res1 = ApplesVsCups.classifyInstance(unlabeled.get(0));
-			if(res1 == 0){ //Tazzine
+			if(res1 == 0){ //Cup
 				Instances unlabCups = returnIstances(toInstanceCups);
 				res2 = Cups.classifyInstance(unlabCups.get(0));
 				if(res2 == 0)

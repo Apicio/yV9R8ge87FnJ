@@ -17,17 +17,16 @@ Classiwekation::Classiwekation(void)
     	printf("\nUnable to Launch JVM\n");
 
 	clsWeka = env->FindClass("Weka"); // Read Weka.class
-	runClassification = env->GetMethodID(clsWeka,"runClassification","(Ljava/lang/String;Ljava/lang/String;)D");
+	runClassification = env->GetMethodID(clsWeka,"runClassification","(Ljava/lang/String;)D");
 	jmethodID clsWekaConst = env->GetMethodID(clsWeka, "<init>", "(Ljava/lang/String;)V");
 	jstring StringArg = env->NewStringUTF(MODEL);
 	WekaObj = env->NewObject(clsWeka, clsWekaConst, StringArg);
 
 }
 
-double Classiwekation::classify(string featuresBGR, string featuresLBP){	
-	jstring StringArgBGR = env->NewStringUTF(featuresBGR.c_str());
-	jstring StringArgLBP = env->NewStringUTF(featuresLBP.c_str());
-	double jobjRetData = env->CallDoubleMethod(WekaObj,runClassification,StringArgBGR,StringArgLBP);
+double Classiwekation::classify(string features){	
+	jstring StringArg = env->NewStringUTF(features.c_str());
+	double jobjRetData = env->CallDoubleMethod(WekaObj,runClassification,StringArg);
 	jthrowable exc = env->ExceptionOccurred();
     if (exc) {
         jclass newExcCls;
@@ -41,7 +40,7 @@ double Classiwekation::recognition(std::vector<cv::Mat> buffer, TheWalkingNao& t
 	// cambiare risoluzione
 	cout<<"Calling recognition"<<endl;
 	vector<vector<double> > results;
-	Mat kernelOp = getStructuringElement(MORPH_RECT,Size(7,7));
+	Mat kernelOp = getStructuringElement(MORPH_RECT,Size(10,10));
 	Direction stash1; Point stash2; float stash3=0;
 	vector<Mat> rectangles;
 	for(int i=0; i<buffer.size(); i++){
@@ -50,7 +49,7 @@ double Classiwekation::recognition(std::vector<cv::Mat> buffer, TheWalkingNao& t
 		cout<<"filtering image "<< endl;
 		Mat path_mask;
 		twn.pathfinder(image, stash1, stash2, stash3, path_mask);	
-		dilate(path_mask,path_mask,kernelOp);	
+		erode(path_mask,path_mask,kernelOp);	
 		cout<<"calling detection"<<endl;
 		detect2(image,rectangles, blobs, path_mask);
 		cout<<"Detection done with "<< blobs.size() << "candidates elements" << endl;
@@ -58,10 +57,12 @@ double Classiwekation::recognition(std::vector<cv::Mat> buffer, TheWalkingNao& t
 			cout<<"Extracting features"<<endl;
 			// scarta blob a y < 140 (cambiare risoluzione)
 			// scartare blob piccoli
-			string featuresBGR = FeatExtract().extractForColorClassifier(blobs[i], false);
-			string featuresLBP = FeatExtract().extractForLBPClassifier(blobs[i], false);
-			results.at(i).push_back(classify(featuresBGR, featuresLBP));
-			// aggiungere una probabilitï¿½ in funzione della dimensione del blob, gli oggetti di interesse hanno tutti una certa dimensione
+			string features = FeatExtract().extractDuringMovement(blobs[k], false);
+	        //results.at(i).push_back(classify(features));
+			imshow("pathfind_filter",blobs[k].cuttedImages);
+			cout<<features<<endl;
+			cout<<"pushed features"<<endl;
+			// aggiungere una probabilità in funzione della dimensione del blob, gli oggetti di interesse hanno tutti una certa dimensione
 			// potrebbero esserci ogetti sullo sfondo per marker di stop diversi da quello corrente, filtra distanza.
 		}
 	}
