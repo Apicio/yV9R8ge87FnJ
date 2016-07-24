@@ -66,30 +66,22 @@ void NaoUtils::explore(){
 Mat NaoUtils::seeDetection(ALVideoDeviceProxy camProx, ALValue &img){
 	cv::Mat imgHeader;
 	try{
-	std::string subscriberID = "subscriberID1";
+	std::string subscriberID = "subscriberID2";
 	/** Subscribe a client image requiring 640*480 and BGR colorspace.*/
-	subscriberID = camProx.subscribeCamera("subscriberID1",1, kQVGA, kBGRColorSpace, 30);
+	subscriberID = camProx.subscribeCamera("subscriberID2",1, kVGA, kBGRColorSpace, 30);
 	/** Create an cv::Mat header to wrap into an opencv image.*/
-	imgHeader = cv::Mat(cv::Size(320, 240), CV_8UC3);
+	imgHeader = cv::Mat(cv::Size(640, 480), CV_8UC3);
 
 
 	/** Main loop. Exit when pressing ESC.*/
 	img = camProx.getImageRemote(subscriberID);
 	imgHeader.data = (uchar*) img[6].GetBinary();
 	camProx.releaseImage(subscriberID);
-
-	static int i = 0;
-	i++;
-	std::stringstream ss;
-	ss << "prova\\image_detection_14" << i <<".jpg";
-	imwrite(ss.str(),imgHeader);
-	imshow("naosee",imgHeader);
-
 	/** Cleanup.*/
 	camProx.unsubscribe(subscriberID);
 	}catch(std::exception& e){std::cout<<e.what()<<std::endl; camProx.unsubscribe(subscriberID);
 	}
-	return imgHeader;
+	return imgHeader.clone();
 }
 
 
@@ -141,7 +133,7 @@ void NaoUtils::takeSomePhotos(std::string path){
 		imgHeader.data = (uchar*) img[6].GetBinary();
 		ss<<path<<"img"<< rand() <<".jpg";
 		cv::imshow("curr", imgHeader);
-		keyPressed=cv::waitKey(0);
+		keyPressed=cv::waitKey(300);
 		cv::imwrite(ss.str(),imgHeader);
 		ss.str("");
 		camProx.releaseImage(subscriberID);

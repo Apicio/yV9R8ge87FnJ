@@ -8,6 +8,7 @@
 #include <opencv2/opencv.hpp>
 #include "detection.h"
 #include "FeatExtract.h"
+#include "TheWalkingNao.h"
 #define MODEL "..\\JavaSrc\\TestStruct\\"
 using namespace std;
 

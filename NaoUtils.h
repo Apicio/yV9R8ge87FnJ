@@ -19,7 +19,7 @@
 #include <time.h>
 #include <stdlib.h>
 
-#define NAOIP "192.168.88.202"
+#define NAOIP "192.168.0.116"
 #define NAOPORT 9559
 #define SAVEPATH "C:\\imgCatt\\"
 using namespace AL;

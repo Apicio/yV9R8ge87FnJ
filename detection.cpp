@@ -137,7 +137,7 @@ void imadjust(const Mat1b& src, Mat1b& dst, int tol = 1, Vec2i in = Vec2i(0, 255
 	}
 }
 Mat computeRationedImage(vector<Mat> bands){
-	Mat1b toRet = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat1b toRet = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
 	toRet = bands[0]/bands[1] + bands[0]/bands[2] + bands[1]/bands[2] + bands[2]/bands[1] +	 bands[2]/bands[0] + bands[1]/bands[0];
 	imadjust(toRet,toRet);
 	return toRet;
@@ -151,6 +151,7 @@ Mat backgroundRemoval(Mat& img){
 	//bitwise_and(mask1,mask2,maskTOT);
 	maskTOT = mask1 + mask2;
 	return maskTOT;
+
 }
 Mat applyMaskBandByBand(Mat mask, vector<Mat> bands){
 	Mat toReturn;
@@ -345,19 +346,19 @@ Mat computeInterest(Mat& img){
 	threshold(cmyk.at(2),out,otsuT,255,THRESH_BINARY);
 	return img;
 }
-void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
+void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs, Mat path_mask){
 	/*************INIZIALIZZAZIONI**********/
 	Mat gray; 
-	Mat out = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat masked = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat morph = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat bwmorph = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat cont = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat maskHSV = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat whiteMaskMasked = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
-	Mat whiteMaskOrig = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat out = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
+	Mat masked = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
+	Mat morph = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
+	Mat bwmorph = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
+	Mat cont = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
+	Mat maskHSV = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
+	Mat whiteMaskMasked = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
+	Mat whiteMaskOrig = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
 	Mat Bands[3];
-	Mat noBackMask = Mat::zeros(Size(WIDTH,HEIGH), CV_8U);
+	Mat noBackMask = Mat::zeros(Size(DET_WIDTH,DET_HEIGH), CV_8U);
 	Mat kernelEr = getStructuringElement(MORPH_ELLIPSE,Size(5,5));
 	Mat thMasked; Mat thOrig; Mat bwOrig; Mat bwNoBackMask;
 	Mat kernelOp = getStructuringElement(MORPH_ELLIPSE,Size(13,13));
@@ -369,10 +370,11 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 	imshow("gray",gray);*/
 	/*Rimozione Ombre e Background*/
 	//	masked = applyMaskBandByBand(maskHSV,BGRbands); split(masked,BGRbands);
-
+	/* Rimozione marker di percorso */
 	/*Rimozione sfondo e sogliatura per videnziare esclusivamente ciò che è bianco*/
 	noBackMask = backgroundRemoval(img);
 	masked = applyMaskBandByBand(noBackMask,BGRbands);
+	cout << "Removing BG";
 	/*
 	whiteMaskOrig = computeWhiteMaskLight(img);
 	whiteMaskOrig = whiteMaskOrig + computeWhiteMaskShadow(img);
@@ -383,18 +385,23 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 	computeInterest(img);
 	CBlobResult blobsRs;
 	blobsRs = computeWhiteMaskOtsu(img, img, blobsRs, img.rows*img.cols, img.rows*img.cols, 0.8, 0.8, 30, 200, 0);
-
+	cout<<"..Compute White Mask";
+	
+	
 	whiteMaskOrig.setTo(0);
 	for(int i=0;i<blobsRs.GetNumBlobs();i++){
 		double area = blobsRs.GetBlob(i)->Area();
 		if(area < 10000 && area > 400)
 			blobsRs.GetBlob(i)->FillBlob(whiteMaskOrig,CV_RGB(255,255,255),0,0,true);
 	}
-
+	cout <<"..Fill blob";
+	imshow("asd",whiteMaskOrig);
+	waitKey(0);
 	threshold(masked,whiteMaskMasked,0,255,THRESH_BINARY);
 	cvtColor(whiteMaskMasked,whiteMaskMasked,CV_BGR2GRAY);
 	cout << whiteMaskMasked.type() << " " << whiteMaskOrig.type() << endl;
 	bitwise_or(whiteMaskMasked,whiteMaskOrig,thOrig);
+	bitwise_and(path_mask,thOrig,thOrig);
 	masked = applyMaskBandByBand(thOrig,BGRbands);
 #if DO_MORPH
 	/*Operazioni morfologiche per poter riempire i buchi e rimuovere i bordi frastagliati*/
@@ -406,7 +413,8 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 #else
 	morph = masked;
 #endif
-
+	imshow("asdmor",morph);
+	waitKey(0);
 	/*Ricerca componenti connesse e rimozione in base all'area*/
 	cvtColor(morph,bwmorph,CV_BGR2GRAY);
 	findContours(bwmorph, contours, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
@@ -415,6 +423,7 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 		if(areas.at(j)>MAX_AREA || areas.at(j)<MIN_AREA )
 			contours.erase(contours.begin()+j);
 	}
+	cout<<"..Ricerca Componenti Connesse"<<endl;
 
 	/*Calcolo Bounding Rectangle a partire dall'immagine con componenti connesse di interesse*/
 	vector<Rect> boundRect( contours.size() );
@@ -447,12 +456,13 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 		b.centroid = centroid;
 		b.area = contourArea(contours[idx]); // Va bene calcolare queste due features senza fittare i bordi in quanto usiamo direttamente
 		// l'output della findContours. 
-		b.distance = HEIGH - centroid.y;
+		b.distance = DET_HEIGH - centroid.y;
 
 
 		/*rectangle( cont, toPrint.tl(), toPrint.br(), color, 2, 8, 0 );
 		circle( cont, center[idx], (int)radius[idx], color, 2, 8, 0 );*/
-		if(!(b.cuttedImages(b.resizedRect).rows*b.cuttedImages(b.resizedRect).cols)<400)
+		Mat toFilter = b.cuttedImages(b.resizedRect);
+		if(!(toFilter.rows*toFilter.cols)<1200)
 			blobs.push_back(b);
 		else{
 			cout<<"VIAAA"<<endl;
@@ -463,11 +473,13 @@ void detect2(Mat img, vector<Mat>& regionsOfInterest,vector<Blob>& blobs){
 		}
 
 	}
+	cout<<"Done."<<endl;
 	bitwise_xor(out,cont,out);
-	/*imshow("img",img);
+	imshow("img",img);
 	imshow("out",out);
 	waitKey(0);
-	cvDestroyAllWindows();*/
+	cvDestroyAllWindows();
+	
 }
 
 Rect resizeRectangle(Rect r){
@@ -476,7 +488,7 @@ Rect resizeRectangle(Rect r){
 	tmpRect += Size(r.width*RECT_AUGMENT ,r.height*RECT_AUGMENT);			  // Aumenta area di RECT_ARGUMENT
 	tmpRect -= Point((r.width*RECT_AUGMENT)/2 , (r.height*RECT_AUGMENT)/2 ); // Ricentra il rettangolo
 	do{
-		if(tmpRect.br().x>WIDTH ||  tmpRect.br().y>HEIGH ){//|| tmpRect.tl().y<0 |||tmpRect.tl().x<0  ){ // Se il rect esce fuori dall'immagine
+		if(tmpRect.br().x>DET_WIDTH ||  tmpRect.br().y>DET_HEIGH ){//|| tmpRect.tl().y<0 |||tmpRect.tl().x<0  ){ // Se il rect esce fuori dall'immagine
 			Point p(tmpRect.br().x-1, tmpRect.br().y-1);
 			tmpRect = Rect(tmpRect.tl(),p);
 		}
@@ -484,7 +496,7 @@ Rect resizeRectangle(Rect r){
 			Point p(tmpRect.tl().x+1, tmpRect.tl().y+1);
 			tmpRect = Rect(p,tmpRect.br());
 		}
-	}while( tmpRect.br().x>WIDTH ||  tmpRect.br().y>HEIGH || tmpRect.tl().y<0 ||tmpRect.tl().x<0  );
+	}while( tmpRect.br().x>DET_WIDTH ||  tmpRect.br().y>DET_HEIGH || tmpRect.tl().y<0 ||tmpRect.tl().x<0  );
 	if(tmpRect.area()< 500)
 		cout<<"ALARM"<<endl;
 	return tmpRect;
