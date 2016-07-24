@@ -26,7 +26,7 @@ private:
 public:
 	Classiwekation(void);
 	void ClassTest(void);
-	double classify(string featuresBGR, string featuresLBP);
+	double classify(string featuresBGR, string featuresLBP );
 	double recognition(std::vector<cv::Mat>); // Ogni 3 abbiamo una direzione.
 	~Classiwekation(void);
 };

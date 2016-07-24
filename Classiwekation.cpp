@@ -14,7 +14,7 @@ Classiwekation::Classiwekation(void)
 
     int ret = JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args);
     if(ret < 0)
-    	printf("\nUnable to Launch JVM\n");
+    	printf("\nUnable to Launch JVM\n ");
 
 	clsWeka = env->FindClass("Weka"); // Read Weka.class
 	runClassification = env->GetMethodID(clsWeka,"runClassification","(Ljava/lang/String;Ljava/lang/String;)D");
